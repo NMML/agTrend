@@ -1,0 +1,51 @@
+\docType{data}
+\name{wdpsNonpups}
+\alias{wdpsNonpups}
+\title{Steller sea lion survey data (nonpup counts) collected by the NOAA National Marine Mammal Laboratory in the western Distinct
+Population Segment of the stock (wDPS).}
+\format{A data frame with 3408 observations on the following 12 variables.
+
+\describe{ \item{site}{Site where survey was taken}
+
+\item{Rookery}{1 if site is a rookery, 0 if else.}
+
+\item{Region}{Region in which the site is located}
+
+\item{RegNum}{Numeric representation of the 'Region' variable}
+
+\item{RCA}{Rookery Cluster Area in which the site belongs}
+
+\item{Lat}{Latitude of the site}
+
+\item{Long}{Longitude of the site}
+
+\item{trend70}{1 if the site belongs to the group of 70s trend sites}
+
+\item{trend90}{1 if the site belongs to the group of 90s trend sites}
+
+\item{CH}{Equals 1 if the site is within critical habitat boundries, 0 else.}
+
+\item{year}{Year in which the survey was conducted}
+
+\item{count}{The count of nonpups observed}
+}}
+\source{
+  Alaska Ecosystems Program, National Marine Mammal
+  Laboratory, Alaska Fisheries Science Center, National
+  Marine Fisheries Service, NOAA, 7600 Sand Point Way, NE
+  Seattle, WA 98115
+}
+\description{
+  Steller sea lion survey data (nonpup counts) collected by
+  the NOAA National Marine Mammal Laboratory in the western
+  Distinct Population Segment of the stock (wDPS).
+}
+\examples{
+data(wdpsNonpups)
+head(wdpsNonpups)
+}
+\references{
+  Need a tech report / memo reference...
+}
+\keyword{datasets}
+

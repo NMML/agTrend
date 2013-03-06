@@ -1,1 +1,3 @@
-exportPattern("^[[:alpha:]]+")
+export(mcmc.aggregate)
+import(coda)
+import(Matrix)

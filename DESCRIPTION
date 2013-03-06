@@ -1,9 +1,13 @@
 Package: agTrend
 Type: Package
-Title: What the package does (short line)
-Version: 1.0
-Date: 2012-11-27
-Author: Who wrote it
-Maintainer: Who to complain to <yourfault@somewhere.net>
-Description: More about what it does (maybe more than one line)
-License: What license is it under?
+Title: Estimate linear trends for aggregated abundance data
+Version: 0.1
+Date: 2013-02-22
+Author: Devin S. Johnson
+Maintainer: Devin S. Johnson <devin.johnson@noaa.gov>
+Description: R package for fitting temporal trends to abundence data aggregated
+    over large regions when subregions have missing data
+License: Unlimited
+Collate:
+    'agTrend-package.R'
+    'agTrend.R'
