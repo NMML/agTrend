@@ -109,63 +109,80 @@ getSiteZIInits <- function(data.orig, abund.name, site.name, time.name,
 #' Posterior predictive sampling, aggregtion of abundance counts, and linear trend summary
 #' 
 #' @description 
-#' Function for sampling from the posterior predictive distribution of abundance (counts) at individual sites. Then aggregating the counts
-#' over the specified aggregation variable. 
+#' Function for sampling from the posterior predictive distribution of abundance (counts) at 
+#' individual sites. Then aggregating the counts over the specified aggregation variable. 
 #' 
-#' @param start
-#' @param end
-#' @param data A \code{data.frame} that contains the abundance survey data.  
-#' @param obs.formula
-#' @param aggregation
-#' @param model.data
-#' @param abund.name
-#' @param time.name
-#' @param site.name
-#' @param sig.abund
-#' @param ln.adj
-#' @param upper
-#' @param lower
-#' @param burn
-#' @param iter
-#' @param thin
-#' @param prior.list
-#' @param keep.site.abund
-#' @param keep.site.param
-#' @param keep.obs.param
+#' @param start  The starting time for trend estimation
+#' @param end  The end time for trend estimation
+#' @param data  A \code{data.frame} that contains the abundance survey data.  
+#' @param obs.formula  A formula object specifying the model for the observation data
+#' @param aggregation  A factor variable. Aggregation is performed over each level of the factor.
+#' @param model.data  A data frame giving the augmentation model for each site. See 'Details'
+#' @param abund.name  A character string giving the name of the data to be aggregated
+#' @param time.name  A character string giving the name of the time variable
+#' @param site.name  A character string giving the name of the site variable. The variable should be a factor
+#' @param sig.abund  A numeric vector the same length as \code{nrow(data)} which contains the known observation error standard deviations.
+#' @param ln.adj  The adjustment for taking logs of counts if zeros are present, e.g., y_st = log(N_st + ln.adj).
+#' @param upper  A data frame containing the upper bounds for augmentation of each site. See 'Details'
+#' @param lower  A data frame containing the lower bounds for augmentation of each site. See 'Details'
+#' @param burn  The length of burnin for the MCMC augmentation and aggregation.
+#' @param iter  The number of MCMC iterations 
+#' @param thin  The amount of thinning of the MCMC sample. e.g., \code{thin=5} implies keeping every 5th MCMC sample for inference
+#' @param prior.list  A named list containing the prior distributions for the parameters and random effects
+#' @param keep.site.abund  Logical. Should the augmented site abundance be retained.
+#' @param keep.site.param  Logical. Should the site augmentation parameters be retianed.
+#' @param keep.obs.param  Logical. Should the observation parameters (gamma) be retianed. 
 #' 
 #' @details 
 #' This function is the workhorse for the \code{agTrend} package. It performs 
 #' MCMC sampling of the posterior predictive distribution of the abundance at 
 #' each site at each time, \eqn{N_{st}}{N_st}. The abundance at each site is 
-#' modeled, in its most general form, with a zero-inflated, nonparameteric, 
-#' log-linear model,
+#' modeled, in its most general form, with a zero-inflated, nonparameteric model,
 #' \deqn{z_{st} = \beta_{s0} + \beta_{s1}t + \eta_{st} + \delta_{st} \mbox{ if } N_{st}>0,}{z_st = beta_s0 + beta_s1 * t + eta_st + delta_st if N_st > 0,}
 #' where \eqn{\beta_{s0}+\beta_{s1}t}{beta_s0 + beta_s1 * t} is the linear 
-#' trend, \eqn{\eta}{eta} is a random walk of order 2 (RW2), and 
+#' trend, \eqn{\eta}{eta} is a random walk of order 2 (RW2), and \eqn{\delta_{st}}{delta_st} is an iid normal error variable. The zero-inflation part is added via 
+#' the probit regression model
+#' \deqn{\mbox{probit}\{P(N_{st}>0)\} = \theta_{s0} + \theta_{s1}t + \alpha_{st},}{probit{P(N_st > 0)} = theta_s0 + theta_s1 * t + alpha_st,}
+#' where \eqn{\theta_{s0}}{theta_s0} and \eqn{\theta_{s1}}{theta_s1} are linear regression coefficients and \eqn{\alpha}{alpha} is a RW2 model.
 #' 
-#' 
-#' Then, for each iteration of the MCMC sampler, the complete data is aggregated (i.e., summed) over all sites 
-#' within a specified region. Thus, one can obtain a posterior predictive sample from the aggregated abundance for every time between the first
-#' time in the data set and the last. In its most general form, the model fit to each site \eqn{s}{s} at time \eqn{t}{t} is specified by
-#' \deqn{y_{st} = x_{st}'\gamma + z_{st} + \epsilon_{st},}{y_st = x_st gamma +  + eps_st,}
-#' where \eqn{y_{st}}{y_st} is the raw observed log abundance, \eqn{z_{st}}{z_st} is the 'corrected' standardized log abundance, 
-#' \eqn{x_{st}}{x_st} is a vector of covariates used to standardize the raw abundance, \eqn{\gamma}{gamma} is a vector of coefficients, and 
+#' In order to account for observation effects or changing methodology through time one can specify an \code{obs.model}. The \code{obs.model} is a R formula object 
+#' that specifies variables in \code{data} that can account for differences due to sampling methodology alone. If \code{obs.model} is provided, the observation model is specified as
+#' \deqn{y_{st} = x_{st}'\gamma + z_{st} + \epsilon_{st},}{y_st = x_st gamma + z_st + eps_st,}
+#' where \eqn{y_{st}}{y_st} is the raw observed log abundance, 
+#' \eqn{x_{st}}{x_st} is a vector of covariates used to standardize the observed abundance, \eqn{\gamma}{gamma} is a vector of coefficients, and 
 #' \eqn{[\epsilon_{st}]=N(0,\sigma^2_{st})}{[eps_st]=N(0,sigma_st^2)}. Currently, \eqn{\sigma_{st}}{sigma_st} is considered to be known and is specified
-#' as a column in \code{data} by the \code{sig.abund} argument. The abundance standardization parameter is added to help account for changing survey 
-#' methodology. The general 
+#' as a column in \code{data} by the \code{sig.abund} argument. Thus, \eqn{z_{st}}{z_st} represents the standardized (wrt the survey method) abundance. See \code{demo(wdpsNonpups)} for an example.
+#' 
+#' For each iteration of the MCMC sampler, the complete data is aggregated (i.e., summed) over all sites 
+#' within a specified region (defined by the \code{aggregation} argument). Thus, one can obtain a posterior predictive sample from the aggregated abundance for every time between the first
+#' time in the data set and the last. By using the posterior predictive distribution, we can account for parameter uncertainty at each site as well 
+#' as sampling variability of the survey. Even though we are using the Bayesian inference paradigm, we still capture the essence of frequentist inference by accounting for the 'replication'
+#' of the survey effort by using the predictive distribution even for times and places where we have survey data. Using the aggregations, the average linear 
+#' trend is calculated for all years from \code{start} to \code{end} for each MCMC iteration.  
+#' 
+#' The \code{model.data} data.frame can be provided to reduce the most general model given above to submodels when there is not adequate data to fit the full model
+#' or, if zero-inflation is not necessary. The \code{model.data} must be a \code{data.frame} with columns 
+#' \itemize{
+#' \item{\code{site.name}- Column of all the sites in \code{data}. The name must be given by \code{site.name}}
+#' \item{\code{trend}- A column of all augmentation models to be used at each site, can be one, any only one, of the following: \code{c("const","lin","RW2")}
+#' for a constant mean, linear mean, RW2 model respectively. Each generalization includes all previous models, e.g., an RW2 model contains a linear slope and 
+#' an intercept.}
+#' \item{\code{zero.infl}- The same as the \code{trend} column, except this specifies the model for the zero-inflation component and can additionally include \code{"none"}
+#' if a zero-inflation model is not desired.}
+#' }
+#' 
+#' Examples of this function's use can be seen in the \code{demo(package="agTrend")} files.
+#' 
 #'  
-#' 
-#' Using the aggregations, the average linear trend is calculated between \code{start} and \code{end}. By using
-#' the posterior predictive distribution, we can account for parameter uncertainty at each site as well as sampling variability of the survey.
-#' even though we are using the Bayesian inference paradigm, we still capture the essence of frequentist inference by accounting for the 'replication'
-#' of the survey effort by using the predictive distribution even for times and places where we have survey data.
-#' 
-#'   The data is specified by the   
 #'   
 #' @return
 #' A named list with the following elements:
-#' \item{fit}{first item}
-#'   
+#' \item{trend.summary}{Summary of the posterior predictive linear trend}
+#' \item{aggregation.summary}{Summary of the site aggregations for every time between the first and last}
+#' \item{site.summary}{A summary of the abundance augmentation for every site and every time.}
+#' \item{mcmc.sample}{A named list containing all of the MCMC sample after thinning.}
+#' \item{original.data}{The original data in \code{data}.}
+#' 
 #' @export
 #' @import Matrix
 #' @import coda
@@ -650,7 +667,7 @@ updateTrend <- function(start, end, x){
   if(length(nms.agg)>1) ag.mm <- model.matrix(~(ag.df[,2]+0) + (ag.df[,1]:ag.df[,2]+0))
   else ag.mm <- cbind(rep(1,nrow(ag.df)), yrs)
   H <- solve(crossprod(ag.mm))%*%t(ag.mm)
-  y <- log(smp[,time.idx] + attr(fit, "ln.adj"))
+  y <- log(smp[,time.idx] + attr(x, "ln.adj"))
   tsmp <- t(apply(y, 1, function(y){H%*%y}))
   colnames(tsmp) <- c(paste(nms.agg, "(Intercept)"), paste(nms.agg, "(Trend)"))
   return(mcmc(tsmp))
@@ -660,11 +677,21 @@ updateTrend <- function(start, end, x){
 #' @title Recalculate new site aggregations from a previous MCMC aggregation
 #' 
 #' @description 
-#' @param fit 
-#' @param aggregation.data
+#' If the site abundence sample was retained in a call to \code{\link{mcmc.aggregate}} the 
+#' sites can be re-aggregated according to different region specifications.
+#' 
+#' @param fit The output list from a previous call to \code{\link{mcmc.aggregate}}.
+#' In order to use this function, \code{keep.site.abund = TRUE} had to be used in the original creation of \code{fit}. Else,
+#' there is nothing to be aggregated!
+#' @param aggregation.data  A data frame with the sites in one column 
+#' (with the same name as \code{site.name} used in the original call to create \code{fit}). The other columns
+#' are factor variables defining other site aggregations.
 #' 
 #' @return 
-#' A named list with 
+#' A named list with names equal to the variables in \code{aggregation.data}. Each
+#' element of the list is another list with elements:
+#' \item{aggregated.abund}{The MCMC sample of the new aggregation}
+#' \item{aggregation.summary}{A summary of the aggregation MCMC}
 #' @export
 #'  
 newAggregation <- function(fit, aggregation.data){

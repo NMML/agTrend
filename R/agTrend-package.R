@@ -83,8 +83,6 @@ NULL
 #' 
 #' \describe{ \item{site}{Site where survey was taken}
 #' 
-#' \item{Rookery}{1 if site is a rookery, 0 if else.}
-#' 
 #' \item{Region}{Region in which the site is located}
 #' 
 #' \item{X2000OBL}{Survey count taken from oblique photo source}
@@ -101,13 +99,12 @@ NULL
 #' 
 #' @examples
 #' 
-#' data(photCorrection)
+#' data(photoCorrection)
 #' head(photoCorrection)
 NULL
 
 #' Pup counts from surveys of the eastern Distict Populations Segment (eDPS) of Steller sea lions.
-#' 
-#' 
+#'  
 #' @name edpsPups
 #' @docType data
 #' @format
@@ -132,6 +129,38 @@ NULL
 #' 
 #' data(edpsPups)
 #' head(edpsPups)
+NULL
+
+#' Pup counts from surveys of the western Distict Populations Segment (wDPS) of Steller sea lions.
+#'  
+#' @name wdpsPups
+#' @docType data
+#' @format
+#' 
+#' A data frame with 35 observations on the following 3 variables.
+#' 
+#' \describe{ 
+#' \item{site}{Surveyed sites in the wDPS}
+#' 
+#' \item{Region}{Region of the surveyed site}
+#' 
+#' \item{RCA}{Rookery cluster area of the surveyed site}
+#' 
+#' \item{year}{Survey year}
+#' 
+#' \item{count}{Survey count of pups at each site}
+#' }
+#' 
+#' @source Alaska Ecosystems Program, National Marine Mammal Laboratory, Alaska
+#' Fisheries Science Center, National Marine Fisheries Service, NOAA, 7600 Sand
+#' Point Way, NE Seattle, WA 98115
+#' 
+#' @keywords datasets
+#' 
+#' @examples
+#' 
+#' data(wdpsPups)
+#' head(wdpsPups)
 NULL
 
 

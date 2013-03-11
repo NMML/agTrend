@@ -1,3 +1,6 @@
+export(iar.Q)
 export(mcmc.aggregate)
+export(newAggregation)
+export(updateTrend)
 import(coda)
 import(Matrix)

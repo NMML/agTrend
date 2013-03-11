@@ -7,8 +7,6 @@ oblique angles vs. vertical medium-format photos.}
 
 \describe{ \item{site}{Site where survey was taken}
 
-\item{Rookery}{1 if site is a rookery, 0 if else.}
-
 \item{Region}{Region in which the site is located}
 
 \item{X2000OBL}{Survey count taken from oblique photo source}
@@ -28,7 +26,7 @@ oblique angles vs. vertical medium-format photos.}
   vertical medium-format photos.
 }
 \examples{
-data(photCorrection)
+data(photoCorrection)
 head(photoCorrection)
 }
 \keyword{datasets}
