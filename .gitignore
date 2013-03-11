@@ -3,5 +3,4 @@
 .RData
 *.Rproj
 .DS_Store
-data/
 data_proc/*.xlsx
