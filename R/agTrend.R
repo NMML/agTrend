@@ -200,6 +200,7 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   use.zi <- !is.null(model.data$zero.infl)
   if(use.zi) use.zi <- any(model.data$zero.infl!="none")
   if(use.zi) use.alpha <- any(model.data$zero.infl=="RW2")
+  else use.alpha <- FALSE
   use.gam <- !is.null(obs.formula)
   use.eta <- any(model.data$trend=="RW2")
 
@@ -442,6 +443,8 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   #prediction and trends
   ag.pred.abund.stor <- matrix(nrow=iter, ncol=length(ag.nms))
   colnames(ag.pred.abund.stor) <- ag.nms
+  ag.abund.stor <- matrix(nrow=iter, ncol=length(ag.nms))
+  colnames(ag.pred.abund.stor) <- ag.nms
   if(keep.site.abund){
     pred.site.abund.stor <- matrix(nrow=iter, ncol=length(site.nms))
     colnames(pred.site.abund.stor) <- site.nms
@@ -484,6 +487,7 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   }
   # MCMC UPDATES ###
   st.mcmc <- Sys.time()
+
   for(i in 1:(burn + iter*thin)){
     
     #update z
@@ -567,7 +571,8 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
     if(i > burn){
       if((i-burn)%%thin==0){
         j <- (i-burn)/thin
-        ag.pred.abund.stor[j,] <- pmax(0,exp(as.vector(ag.abund.pred))-ln.adj) #
+        ag.pred.abund.stor[j,] <- pmax(0,exp(as.vector(ag.abund.pred))-ln.adj) 
+        ag.abund.stor[j,] <- pmax(0,exp(as.vector(ag.abund))-ln.adj) 
         ag.trend.stor[j,] <- as.vector(ag.trend)
         ag.pred.trend.stor[j,] <- as.vector(ag.pred.trend)
         if(keep.site.abund) pred.site.abund.stor[j,] <- pmax(0, c(exp(as.vector(z.pred))-ln.adj)[yr.idx>=start & yr.idx<=end]) #
@@ -590,8 +595,13 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
       tpi <- difftime(tme,st.mcmc, units="mins")/15
       ttc <- round((iter*thin + burn - 15)*tpi, 1)
       cat("\nApproximate time to completion ", ttc, "minutes... \n\n")  
+      pb <- txtProgressBar(min = 0, max = burn + iter*thin, style = 3)
     }
+    
+    if(i>15) setTxtProgressBar(pb, i)
+    
   }
+  close(pb)
   if(keep.site.abund) pred.site.abund <- mcmc(pred.site.abund.stor)
   else pred.site.abund <- NULL
   if(keep.site.param){
@@ -609,14 +619,21 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   if(use.zi) prob.zero.infl <- mcmc(p.stor)
   else  prob.zero.infl <- NULL
   mcmc.sample <- list(pred.trend=mcmc(ag.pred.trend.stor), trend=mcmc(ag.trend.stor), 
-                      aggregated.abund=mcmc(ag.pred.abund.stor),
+                      aggregated.pred.abund=mcmc(ag.pred.abund.stor), aggregated.rel.abund=mcmc(ag.abund.stor),
                       pred.site.abund=pred.site.abund, site.param=site.param, gamma=gamma,
                       prob.zero.infl=prob.zero.infl)
   summ.dat1 <- expand.grid(d.yrs, levels(ag.data[,2]))
   summ.dat1 <- summ.dat1[summ.dat1[,1]>=start & summ.dat1[,1]<=end,]
-  summ.dat1$post.median.abund <- apply(mcmc.sample$aggregated.abund, 2, median)
-  summ.dat1$low90.hpd <- HPDinterval(mcmc.sample$aggregated.abund, 0.9)[,1]
-  summ.dat1$hi90.hpd <- HPDinterval(mcmc.sample$aggregated.abund, 0.9)[,2]
+  summ.dat3 <- summ.dat1
+  
+  summ.dat1$post.median.abund <- apply(mcmc.sample$aggregated.pred.abund, 2, median)
+  summ.dat1$low90.hpd <- HPDinterval(mcmc.sample$aggregated.pred.abund, 0.9)[,1]
+  summ.dat1$hi90.hpd <- HPDinterval(mcmc.sample$aggregated.pred.abund, 0.9)[,2]
+  
+  summ.dat3$post.median.abund <- apply(mcmc.sample$aggregated.rel.abund, 2, median)
+  summ.dat3$low90.hpd <- HPDinterval(mcmc.sample$aggregated.rel.abund, 0.9)[,1]
+  summ.dat3$hi90.hpd <- HPDinterval(mcmc.sample$aggregated.rel.abund, 0.9)[,2]
+  
   if(keep.site.abund){
     summ.dat2 <- expand.grid(d.yrs, unique(as.character(data[,site.name])))
     summ.dat2 <- summ.dat2[summ.dat2[,1]>=start & summ.dat2[,1]<=end,]
@@ -625,13 +642,18 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
     summ.dat2$hi90.hpd <- HPDinterval(mcmc.sample$pred.site.abund, 0.9)[,2]
   }
   else summ.dat2 <- NULL
-  #summ.dat <- rbind(summ.dat1, summ.dat2)
-  #colnames(summ.dat)[1:2] <- c(time.name, site.name)
-  #summ.dat <- merge(data, summ.dat, by=c(time.name, site.name), all=TRUE)
+
   colnames(summ.dat1)[1:2] <- c(time.name, aggregation)
+  colnames(summ.dat3)[1:2] <- c(time.name, aggregation)
   colnames(summ.dat2)[1:2] <- c(time.name, site.name)
-  output <- list(trend.summary=summary(mcmc.sample$pred.trend), aggregation.summary=summ.dat1, site.summary=summ.dat2, 
-                 mcmc.sample=mcmc.sample, original.data=data.orig)
+  output <- list(
+    trend.summary=summary(mcmc.sample$pred.trend), 
+    aggregation.pred.summary=summ.dat1, 
+    aggregation.rel.summary=summ.dat3,
+    site.summary=summ.dat2, 
+    mcmc.sample=mcmc.sample, 
+    original.data=data.orig
+    )
   attr(output, "site.name") <- site.name
   attr(output, "time.name") <- time.name
   attr(output, "aggregation") <- aggregation
@@ -643,15 +665,19 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
 
 ##############################################################
 #' @title Recalculate posterior predictive trend with a different time scale.
-#' @param start A new start value for the time span
-#' @param end A new end value for the time span
 #' @param x An mcmc augmentation object produced by a call to \code{\link{mcmc.aggregate}} or 
 #' an element of the list produced by a call to \code{\link{newAggregation}}.
+#' @param start A new start value for the time span
+#' @param end A new end value for the time span
+#' @param type The type of trend calculated. Use \code{"pred"} for posterior predictive trends
+#' and \code{"rel"} to use the estimated, realized abumndance aggregation.
 #' @export
 #'  
-updateTrend <- function(start, end, x){
+updateTrend <- function(x, start, end, type="pred"){
   require(coda)
-  smp <- x$mcmc.sample$aggregated.abund
+  if(type=="pred") smp <- x$mcmc.sample$aggregated.pred.abund
+  else if(type=="rel") smp <- x$mcmc.sample$aggregated.rel.abund
+  else stop("Unknown 'type', must be 'pred' or 'rel'.\n")
   nms <- strsplit(colnames(smp),"-")
   time <- as.numeric(sapply(nms, function(x)x[[1]]))
   start <- max(start, min(time))

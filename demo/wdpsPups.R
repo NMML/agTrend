@@ -55,16 +55,17 @@ upper <- aggregate(wdpsPups$count, list(wdpsPups$site), function(x){3*max(x)})
 colnames(upper) <- c("site", "upper")
 
 ### Perform site augmentation and obtain posterior predictive distribution
-fit <- mcmc.aggregate(start=1990, end=2012, data=wdpsPups, model.data=wdpsModels, #aggregation="Region",
+set.seed(123)
+fit <- mcmc.aggregate(start=1990, end=2012, data=wdpsPups, model.data=wdpsModels,
                       abund.name="count", time.name="year", site.name="site", 
-                      burn=100, iter=1000, thin=5, prior.list=prior.list, upper=upper, 
+                      burn=5000, iter=10000, thin=5, prior.list=prior.list, upper=upper, 
                       keep.site.param=TRUE, keep.site.abund=TRUE, keep.obs.param=TRUE)
 
 
 ### Look at the results
-fitdat <- fit$aggregation.summary
+fitdat <- fit$aggregation.pred.summary
 # Compute trends for just 2000-2012
-trend2000 <- updateTrend(2000, 2012, fit)
+trend2000 <- updateTrend(fit, 2000, 2012, "pred")
 # Change to % growth form
 growth2000 <- mcmc(100*(exp(trend2000[,2])-1))
 summary(growth2000)
@@ -77,7 +78,10 @@ data.frame(
 # Add fitted 2000-2012 trendd to aggregation summary
 b <- apply(trend2000, 2, median)
 X <- model.matrix(~year, data=fitdat)
-fitdat$trend2000 <- exp(X%*%b)
+fitdat$trend2000 <- apply(
+  apply(as.matrix(trend2000), 1, FUN=function(b,Mat){as.vector(exp(Mat%*%b))}, Mat=X), 
+  1, median
+  )
 fitdat$trend2000[fitdat$year<2000] <- NA
 
 # Make a plot of the results (requires ggplot2 package)
@@ -87,10 +91,15 @@ wdpsfig <- ggplot(fitdat, aes(x=year, y=post.median.abund)) +
   geom_ribbon(aes(ymin=low90.hpd, ymax=hi90.hpd), alpha=0.15) +
   geom_line(aes(y=trend2000),lwd=3, data=fitdat[fitdat$year>=2000,], color="blue") + 
   xlab("Year") + ylab("WDPS estimated pup production")
-ggsave("wdpstrends_pup.png", wdpsfig, width=6.5, height=6.5, units="in")
+ggsave("wdpstrends_pup.pdf", wdpsfig)
 
 
 # MARMOT in the C ALEU
+site.pred <- fit$mcmc.sample$pred.site.abund
+yr.site <- expand.grid(c(1990:2012), levels(wdpsPups$site))
+colnames(yr.site) <- c("year","site")
+yr.site <- merge(yr.site, wdpsModels, by="site")
+
 marmot.pred <- mcmc(site.pred[,yr.site$site=="MARMOT"])
 marmot.dat <- fit$original.data[fit$original.data$site=="MARMOT",]
 marmot.plot <- ggplot() + 
@@ -99,4 +108,8 @@ marmot.plot <- ggplot() +
   geom_ribbon(aes(ymin=lower, ymax=upper, x=c(1990:2012)), data=data.frame(HPDinterval(marmot.pred, 0.5)), alpha=0.25) +
   geom_point(aes(y=count, x=year), data=marmot.dat, size=3) +
   xlab("Year") + ylab("Abundance")
-ggsave("marmotPred_pup.png", marmot.plot, dpi=300)
+ggsave("marmotPred_pup.pdf", marmot.plot)
+
+
+# Save the results-- uncomment to save
+save(list=ls(), file="wdpsPupsDemoResults.rda")

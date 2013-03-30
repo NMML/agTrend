@@ -64,6 +64,7 @@ upper <- aggregate(wdpsNonpups$count, list(wdpsNonpups$site), function(x){3*max(
 colnames(upper) <- c("site", "upper")
 
 ### Perform site augmentation and obtain posterior predictive distribution
+set.seed(123) 
 fit <- mcmc.aggregate(start=1990, end=2012, data=wdpsNonpups, obs.formula=~obl-1, model.data=wdpsModels, aggregation="Region",
                       abund.name="count", time.name="year", site.name="site", 
                       burn=5000, iter=10000, thin=5, prior.list=prior.list, upper=upper, 
@@ -71,9 +72,9 @@ fit <- mcmc.aggregate(start=1990, end=2012, data=wdpsNonpups, obs.formula=~obl-1
 
 
 ### Look at the results
-fitdat <- fit$aggregation.summary
+fitdat <- fit$aggregation.pred.summary
 # Compute trends for just 2000-2012
-trend2000 <- updateTrend(2000, 2012, fit)
+trend2000 <- updateTrend(fit, 2000, 2012, "pred")
 # Change to % growth form
 growth2000 <- mcmc(100*(exp(trend2000[,7:12])-1))
 summary(growth2000)
@@ -86,7 +87,10 @@ data.frame(
 # Add fitted 2000-2012 trend to aggregation summary
 b <- apply(trend2000, 2, median)
 X <- model.matrix(~(Region-1) + (Region-1):(year), data=fitdat)
-fitdat$trend2000 <- exp(X%*%b)
+fitdat$trend2000 <- apply(
+  apply(as.matrix(trend2000), 1, FUN=function(b,Mat){as.vector(exp(Mat%*%b))}, Mat=X), 
+  1, median
+  )
 fitdat$trend2000[fitdat$year<2000] <- NA
 
 # Make a plot of the results (requires ggplot2 package)
@@ -96,7 +100,7 @@ wdpsfig <- ggplot(fitdat, aes(x=year, y=post.median.abund, color=Region)) +
   geom_ribbon(aes(ymin=low90.hpd, ymax=hi90.hpd, fill=Region), alpha=0.15) +
   geom_line(aes(y=trend2000,color=Region),lwd=3, data=fitdat[fitdat$year>=2000,]) + 
   xlab("Year") + ylab("WDPS estimated abundance")
-ggsave("wdpstrends.png", wdpsfig, width=6.5, height=6.5, units="in")
+ggsave("wdpstrends.pdf", wdpsfig)
 
 # Examine a couple of specific sites
 site.pred <- fit$mcmc.sample$pred.site.abund
@@ -112,7 +116,7 @@ glacier.plot <- ggplot() +
   geom_ribbon(aes(ymin=lower, ymax=upper, x=c(1990:2012)), data=data.frame(HPDinterval(glacier.pred, 0.5)), alpha=0.25) +
   geom_point(aes(y=count, x=year), data=glacier.dat, size=3) +
   xlab("Year") + ylab("Abundance")
-ggsave("glacierPred.png", glacier.plot, dpi=300)
+ggsave("glacierPred.pdf", glacier.plot)
 
 # Zero inflation process for GLACIER
 glacierZI <- mcmc(fit$mcmc.sample$prob.zero.infl[,yr.site$site[yr.site$zero.infl!="none"]=="GLACIER"])
@@ -122,7 +126,7 @@ glacier.plot <- ggplot() +
   geom_ribbon(aes(ymin=lower, ymax=upper, x=c(1990:2012)), data=data.frame(HPDinterval(glacierZI, 0.5)), alpha=0.25) +
   geom_point(aes(y=1.0*c(glacier.dat$count>0), x=year), data=glacier.dat, size=3) +
   xlab("Year") + ylab("Probability survey count > 0")
-ggsave("glacierZI.png", glacier.plot, dpi=300)
+ggsave("glacierZI.pdf", glacier.plot)
 
 # MARMOT in the C ALEU
 marmot.pred <- mcmc(site.pred[,yr.site$site=="MARMOT"])
@@ -133,4 +137,7 @@ marmot.plot <- ggplot() +
   geom_ribbon(aes(ymin=lower, ymax=upper, x=c(1990:2012)), data=data.frame(HPDinterval(marmot.pred, 0.5)), alpha=0.25) +
   geom_point(aes(y=count, x=year), data=marmot.dat, size=3) +
   xlab("Year") + ylab("Abundance")
-ggsave("marmotPred.png", marmot.plot, dpi=300)
+ggsave("marmotPred.pdf", marmot.plot)
+
+# Save the results-- uncomment to save
+save(list=ls(), file="wdpsNonpupsDemoResults.rda")
