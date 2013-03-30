@@ -140,4 +140,4 @@ marmot.plot <- ggplot() +
 ggsave("marmotPred.pdf", marmot.plot)
 
 # Save the results-- uncomment to save
-save(list=ls(), file="wdpsNonpupsDemoResults.rda")
+save(list=ls(), file="wdpsNonpupsDemoResults.rda", compress=TRUE)
