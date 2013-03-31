@@ -112,4 +112,4 @@ ggsave("marmotPred_pup.pdf", marmot.plot)
 
 
 # Save the results-- uncomment to save
-save(list=ls(), file="wdpsPupsDemoResults.rda", compress=TRUE)
+save(fit, file="wdpsPupsDemoResults.rda", compress=TRUE)

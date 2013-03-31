@@ -61,5 +61,5 @@ dd$x[dd$y==max(dd$y)]
 HPDinterval(exp(fit$mcmc.sample$pred.trend[,2])-1, 0.9)
 
 # Save the results-- uncomment to save
-save(list=ls(), file="edpsPupsDemoResults.rda", compress=TRUE)
+save(fit, file="edpsPupsDemoResults.rda", compress=TRUE)
 

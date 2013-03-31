@@ -177,9 +177,6 @@ NULL
             "BE CAREFUL! The demos take a while as they are running a full MCMC sampler.\n\n",
             "The raw code for the demos can be found by typing:\n",
             "\t system.file('demo', package='agTrend')\n\n",
-            "Results for the demos can be loaded by typing:\n",
-            "\t load(system.file('extdata','(demoName)DemoResults.rda', package='agTrend'))\n",
-            "where (demoName) is replaced by the demo (e.g., wdpsNonpups)\n\n",
             "To access the help files type:\n",
             "\t help('agTrend-package')\n\n")
     )

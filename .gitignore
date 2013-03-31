@@ -4,3 +4,4 @@
 *.Rproj
 .DS_Store
 data_proc/*.xlsx
+demo_results/
