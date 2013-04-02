@@ -2,7 +2,7 @@
 \alias{newAggregation}
 \title{Recalculate new site aggregations from a previous MCMC aggregation}
 \usage{
-  newAggregation(fit, aggregation.data)
+  newAggregation(fit, aggregation.data, type = "pred")
 }
 \arguments{
   \item{fit}{The output list from a previous call to
@@ -16,6 +16,10 @@
   in the original call to create \code{fit}). The other
   columns are factor variables defining other site
   aggregations.}
+
+  \item{type}{Which site abundance augmentation should be
+  used, \code{"pred"} for posterior predictive or
+  \code{"rel"} for realized (just the posterior).}
 }
 \value{
   A named list with names equal to the variables in

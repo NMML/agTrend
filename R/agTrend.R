@@ -447,7 +447,8 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   colnames(ag.pred.abund.stor) <- ag.nms
   if(keep.site.abund){
     pred.site.abund.stor <- matrix(nrow=iter, ncol=length(site.nms))
-    colnames(pred.site.abund.stor) <- site.nms
+    rel.site.abund.stor <- matrix(nrow=iter, ncol=length(site.nms))
+    colnames(pred.site.abund.stor) <- colnames(rel.site.abund.stor) <- site.nms
   }
   ag.trend.stor <- matrix(nrow=iter, ncol=2*length(levels(data[,aggregation])))
   colnames(ag.trend.stor) <- c(paste(levels(data[,aggregation]),"(Intercept)",sep=":"), 
@@ -575,7 +576,10 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
         ag.abund.stor[j,] <- pmax(0,exp(as.vector(ag.abund))-ln.adj) 
         ag.trend.stor[j,] <- as.vector(ag.trend)
         ag.pred.trend.stor[j,] <- as.vector(ag.pred.trend)
-        if(keep.site.abund) pred.site.abund.stor[j,] <- pmax(0, c(exp(as.vector(z.pred))-ln.adj)[yr.idx>=start & yr.idx<=end]) #
+        if(keep.site.abund){
+          pred.site.abund.stor[j,] <- N.pred[yr.idx>=start & yr.idx<=end]
+          rel.site.abund.stor[j,] <- N.obs[yr.idx>=start & yr.idx<=end]
+        }
         if(keep.site.param){
           b.stor[j,] <- as.vector(b)
           tau.stor[j,] <- tau
@@ -602,7 +606,10 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
     
   }
   close(pb)
-  if(keep.site.abund) pred.site.abund <- mcmc(pred.site.abund.stor)
+  if(keep.site.abund){
+    pred.site.abund <- mcmc(pred.site.abund.stor)
+    rel.site.abund <- mcmc(rel.site.abund.stor)
+  }
   else pred.site.abund <- NULL
   if(keep.site.param){
     site.param=list(
@@ -620,7 +627,8 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   else  prob.zero.infl <- NULL
   mcmc.sample <- list(pred.trend=mcmc(ag.pred.trend.stor), trend=mcmc(ag.trend.stor), 
                       aggregated.pred.abund=mcmc(ag.pred.abund.stor), aggregated.rel.abund=mcmc(ag.abund.stor),
-                      pred.site.abund=pred.site.abund, site.param=site.param, gamma=gamma,
+                      pred.site.abund=pred.site.abund, rel.site.abund=rel.site.abund,
+                      site.param=site.param, gamma=gamma,
                       prob.zero.infl=prob.zero.infl)
   summ.dat1 <- expand.grid(d.yrs, levels(ag.data[,2]))
   summ.dat1 <- summ.dat1[summ.dat1[,1]>=start & summ.dat1[,1]<=end,]
@@ -675,7 +683,7 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
 #'  
 updateTrend <- function(x, start, end, type="pred"){
   require(coda)
-  if(type=="pred") smp <- x$mcmc.sample$aggregated.pred.abund
+  if(type=="pred" | is.null(x$mcmc.sample$aggregated.rel.abund)) smp <- x$mcmc.sample$aggregated.pred.abund
   else if(type=="rel") smp <- x$mcmc.sample$aggregated.rel.abund
   else stop("Unknown 'type', must be 'pred' or 'rel'.\n")
   nms <- strsplit(colnames(smp),"-")
@@ -712,6 +720,8 @@ updateTrend <- function(x, start, end, type="pred"){
 #' @param aggregation.data  A data frame with the sites in one column 
 #' (with the same name as \code{site.name} used in the original call to create \code{fit}). The other columns
 #' are factor variables defining other site aggregations.
+#' @param type Which site abundance augmentation should be used, \code{"pred"} for posterior
+#' predictive or \code{"rel"} for realized (just the posterior).
 #' 
 #' @return 
 #' A named list with names equal to the variables in \code{aggregation.data}. Each
@@ -720,9 +730,10 @@ updateTrend <- function(x, start, end, type="pred"){
 #' \item{aggregation.summary}{A summary of the aggregation MCMC}
 #' @export
 #'  
-newAggregation <- function(fit, aggregation.data){
+newAggregation <- function(fit, aggregation.data, type="pred"){
   require(coda)
-  xxx <- fit$mcmc.sample$pred.site.abund
+  if(type == "pred") xxx <- fit$mcmc.sample$pred.site.abund
+  if(type == "rel") xxx <- fit$mcmc.sample$rel.site.abund
   if(is.null(xxx)) stop("Site abundance data was not retained in the call to 'mcmc.aggreation()'\n Please re-run with 'keep.site.abund=TRUE'\n")
   site.name <- attr(fit,"site.name")
   time.name <- attr(fit,"time.name")
@@ -732,21 +743,22 @@ newAggregation <- function(fit, aggregation.data){
   m1 <- merge(site.idx, aggregation.data, all=TRUE)
   ag.names <- colnames(aggregation.data)[colnames(aggregation.data)!=site.name]
   outlist <- vector("list", length(ag.names))
-  Tmat <- cbind(rep(1,length(unique(site.idx[,2]))), unique(site.idx[,2]))
+  #Tmat <- cbind(rep(1,length(unique(site.idx[,2]))), unique(site.idx[,2]))
   names(outlist) <- ag.names
-  for(i in 1:length(ag.names)){
-    cat("Processing aggregation:", ag.names[i], "...\n")
-    a1 <- mcmc(t(apply(as.matrix(xxx), 1, FUN=function(v){aggregate(v, list(m1[,time.name],m1[,ag.names[i]]), FUN=sum)$x})))
-    colnames(a1) <- apply(expand.grid(unique(site.idx[,time.name]), levels(factor(aggregation.data[,ag.names[i]]))),1,paste, collapse="-")
-    ag.summary <- expand.grid(unique(site.idx[,time.name]), levels(factor(aggregation.data[,ag.names[i]])))
-    colnames(ag.summary) <- c(time.name, ag.names[i])
-    ag.summary$post.median.abund <- apply(a1,2,median)
-    hpd <- HPDinterval(a1, 0.9)
-    ag.summary$low90.hpd <- hpd[,1]
-    ag.summary$hi90.hpd <- hpd[,2]
-    outlist[[i]] <- list(mcmc.sample=list(aggregated.abund=a1), aggregation.summary=ag.summary)
-    attr(outlist[[i]], "ln.adj") <- attr(fit, "ln.adj")
-  }
+    for(i in 1:length(ag.names)){
+      cat("Processing", type, "aggregation:", ag.names[i], "...\n")
+      a1 <- mcmc(t(apply(as.matrix(xxx), 1, FUN=function(v){aggregate(v, list(m1[,time.name],m1[,ag.names[i]]), FUN=sum)$x})))
+      colnames(a1) <- apply(expand.grid(unique(site.idx[,time.name]), levels(factor(aggregation.data[,ag.names[i]]))),1,paste, collapse="-")
+      ag.summary <- expand.grid(unique(site.idx[,time.name]), levels(factor(aggregation.data[,ag.names[i]])))
+      colnames(ag.summary) <- c(time.name, ag.names[i])
+      ag.summary$post.median.abund <- apply(a1,2,median)
+      hpd <- HPDinterval(a1, 0.9)
+      ag.summary$low90.hpd <- hpd[,1]
+      ag.summary$hi90.hpd <- hpd[,2]
+      if(type=="pred") outlist[[i]] <- list(mcmc.sample=list(aggregated.pred.abund=a1), aggregation.pred.summary=ag.summary)
+      else  outlist[[i]] <- list(mcmc.sample=list(aggregated.rel.abund=a1), aggregation.rel.summary=ag.summary)
+      attr(outlist[[i]], "ln.adj") <- attr(fit, "ln.adj")
+    }  
   return(outlist)
 }
 

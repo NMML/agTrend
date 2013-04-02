@@ -58,7 +58,7 @@ colnames(upper) <- c("site", "upper")
 set.seed(123)
 fit <- mcmc.aggregate(start=1990, end=2012, data=wdpsPups, model.data=wdpsModels,
                       abund.name="count", time.name="year", site.name="site", 
-                      burn=5000, iter=10000, thin=5, prior.list=prior.list, upper=upper, 
+                      burn=1000, iter=5000, thin=5, prior.list=prior.list, upper=upper, 
                       keep.site.param=TRUE, keep.site.abund=TRUE, keep.obs.param=TRUE)
 
 

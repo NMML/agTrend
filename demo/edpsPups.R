@@ -33,7 +33,7 @@ colnames(upper) <- c("region", "upper")
 set.seed(123)
 fit <- mcmc.aggregate(start=1979, end=2010, data=edpsPups, model.data=edpsModels,
                       abund.name="abund", time.name="year", site.name="region", 
-                      burn=5000, iter=10000, thin=5, prior.list=prior.list, upper=upper, 
+                      burn=1000, iter=5000, thin=5, prior.list=prior.list, upper=upper, 
                       keep.site.param=TRUE, keep.site.abund=TRUE, keep.obs.param=TRUE)
 
 # Extract MCMC summaries
