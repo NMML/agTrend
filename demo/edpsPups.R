@@ -45,11 +45,11 @@ fitdat <- fitdat[order(fitdat$region, fitdat$year),]
 
 # Make a plot of the results (requires ggplot2 package)
 library(ggplot2)
-plt <- ggplot(aes(x=year, y=abund, color=region), data=fitdat) +
+plt <- ggplot(aes(x=year, y=abund, color=region), data=fitdat) + #[fitdat$region%in%c("Total","CA","OR"),]) +
   geom_point(size=3) +
   geom_line(aes(y=post.median.abund)) +
   geom_ribbon(aes(ymin=low90.hpd, ymax=hi90.hpd, fill=region), alpha=0.25) +
-  xlab("Year") + ylab("eDPS estimated abundance") + ggtitle("eDPS 30 Year Trend\n")
+  xlab("\nYear") + ylab("Estimated SSL abundance (4.5 x pup count)\n") + ggtitle("eDPS 30 Year Trend\n")
 ggsave("edpsTotalTrend.pdf", plt)
 
 # Examine individual site trends
@@ -58,7 +58,7 @@ summary(fit$mcmc.sample$site.param$beta)
 # Estimate posterior predictive mode and HPD credible interval growth rate (percentage form) for EDPS stock
 dd <- density(exp(fit$mcmc.sample$pred.trend[,2])-1)
 dd$x[dd$y==max(dd$y)]
-HPDinterval(exp(fit$mcmc.sample$pred.trend[,2])-1, 0.9)
+HPDinterval(exp(fit$mcmc.sample$pred.trend[,2])-1, 0.95)
 
 # Save the results-- uncomment to save
 save(fit, file="edpsPupsDemoResults.rda", compress=TRUE)
