@@ -20,7 +20,7 @@
     <header>
       <div class="inner">
         <h1>agTrend</h1>
-        <h2></h2>
+        <h2>R package for Bayesian inference of trends for aggregated abundance surveys</h2>
         <a href="https://github.com/NMML/agTrend" class="button"><small>View project on</small>GitHub</a>
       </div>
     </header>
@@ -35,11 +35,55 @@
 <h4>Installing <em>agTrend</em>
 </h4>
 
-<h5>Using devtools</h5>
+<p>There are two basic methods to install the agTrend package, from within R itself using the devtools package and downloading a binary appropriate to your operating system. If you are using a windows machine it is possible that you will need <a href="http://cran.r-project.org/bin/windows/Rtools/">Rtools</a> installed to build and install the package. There is no compiled code in agTrend. </p>
 
-<p><code>install.packages("devtools")</code></p>
+<p><em>Using devtools</em></p>
 
-<h5>Downloading a binary file</h5>
+<p>You can obtain the agTrend package using the GitHub installation function within the devtools R package. If devtools is not installed, it can be installed from CRAN by typing <code>install.packages("devtools")</code> from within the R console.</p>
+
+<p>If devtools is installed, to install agTrend, open the R console and type</p>
+
+<pre><code>&gt; library(devtools)
+&gt; install_github("agTrend", username="NMML")
+</code></pre>
+
+<p>After which you should see something like the following output</p>
+
+<pre><code>Installing github repo(s) agTrend/master from NMML
+Installing agTrend.zip from https://github.com/NMML/agTrend/archive/master.zip
+Installing agTrend
+'/Library/Frameworks/R.framework/Resources/bin/R' --vanilla CMD build  \
+  '/private/var/folders/6k/w2252zws24q227kr94cd0k7w000595/T/RtmpF5155F/agTrend-master'  \
+  --no-manual --no-resave-data 
+
+* checking for file '/private/var/folders/6k/w2252zws24q227kr94cd0k7w000595/T/RtmpF5155F/agTrend-master/DESCRIPTION' ... OK
+* preparing 'agTrend':
+* checking DESCRIPTION meta-information ... OK
+* checking for LF line-endings in source and make files
+* checking for empty or unneeded directories
+* looking to see if a 'data/datalist' file should be added
+* building 'agTrend_0.11.tar.gz'
+
+'/Library/Frameworks/R.framework/Resources/bin/R' --vanilla CMD INSTALL  \
+  '/var/folders/6k/w2252zws24q227kr94cd0k7w000595/T//RtmpF5155F/agTrend_0.11.tar.gz'  \
+  --library='/Users/devin.johnson@afsc.noaa.gov/Library/R' --with-keep.source 
+
+* installing *source* package 'agTrend' ...
+** R
+** data
+** demo
+** inst
+** preparing package for lazy loading
+** help
+*** installing help indices
+** building package indices
+** testing if installed package can be loaded
+* DONE (agTrend)
+</code></pre>
+
+<p><em>Downloading a binary file</em></p>
+
+<p>I have also placed copies of the binary installation files in a Google drive. Follow the following links for your operating system: <a href="https://docs.google.com/file/d/0B7NE3XGvDquOblh1YmRsSEVCTFk/edit?usp=sharing">Mac OSX</a>,  </p>
         </section>
 
         <aside id="sidebar">
