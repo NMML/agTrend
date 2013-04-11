@@ -83,7 +83,17 @@ Installing agTrend
 
 <p><em>Downloading a binary file</em></p>
 
-<p>I have also placed copies of the binary installation files in a Google drive. Follow the following links for your operating system: <a href="https://docs.google.com/file/d/0B7NE3XGvDquOblh1YmRsSEVCTFk/edit?usp=sharing">Mac OSX</a>,  </p>
+<p>I have also placed copies of the binary installation files in a Google drive. Follow the following links for your operating system: <a href="https://docs.google.com/file/d/0B7NE3XGvDquOblh1YmRsSEVCTFk/edit?usp=sharing">Mac OSX</a> or <a href="">Windows</a>. If you are running a Linux machine, see the following section. <em>Note</em>: make sure your browser does not try to automatically unpack the file (this is the default for Safari, go into preferences to change this feature). </p>
+
+<p>After you download the file, open R and set the working directory (e.g., using <code>setwd("path/to/download/dir/")</code>). Once this is set, run</p>
+
+<pre><code>&gt;install.packages("agTrend.zip", repos=NULL)
+</code></pre>
+
+<p>If you have a mac replace with "agTrend.zip" with "agTrend.tgz".</p>
+
+<p><em>Downloading the source file</em>
+Source files for each version can be obtained <a href="https://drive.google.com/folderview?id=0B7NE3XGvDquORXpfb05xMWw2SHc&amp;usp=sharing">here</a>. The desired file can be downloaded and installed in the same way as with the binaries, replacing the file name.</p>
         </section>
 
         <aside id="sidebar">
