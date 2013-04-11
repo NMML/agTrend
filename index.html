@@ -47,28 +47,28 @@
 &gt; install_github("agTrend", username="NMML")
 </code></pre>
 
-<p>After which you should see something like the following output</p>
+<p><strong>Downloading a binary file</strong></p>
 
-<pre><code>Installing github repo(s) agTrend/master from NMML
-Installing agTrend.zip from https://github.com/NMML/agTrend/archive/master.zip
-Installing agTrend
-'/Library/Frameworks/R.framework/Resources/bin/R' --vanilla CMD build  \
-  '/private/var/folders/6k/w2252zws24q227kr94cd0k7w000595/T/RtmpF5155F/agTrend-master'  \
-  --no-manual --no-resave-data 
+<p>I have also placed copies of the binary installation files in a Google drive. Follow the following links for your operating system: <a href="https://docs.google.com/file/d/0B7NE3XGvDquOblh1YmRsSEVCTFk/edit?usp=sharing">Mac OSX</a> or <a href="">Windows</a>. If you are running a Linux machine, see the following section. <em>Note</em>: make sure your browser does not try to automatically unpack the file (this is the default for Safari, go into preferences to change this feature). </p>
 
-* checking for file '/private/var/folders/6k/w2252zws24q227kr94cd0k7w000595/T/RtmpF5155F/agTrend-master/DESCRIPTION' ... OK
-* preparing 'agTrend':
-* checking DESCRIPTION meta-information ... OK
-* checking for LF line-endings in source and make files
-* checking for empty or unneeded directories
-* looking to see if a 'data/datalist' file should be added
-* building 'agTrend_0.11.tar.gz'
+<p>After you download the file, open R and set the working directory (e.g., using <code>setwd("path/to/download/dir/")</code>). Once this is set, run</p>
 
-'/Library/Frameworks/R.framework/Resources/bin/R' --vanilla CMD INSTALL  \
-  '/var/folders/6k/w2252zws24q227kr94cd0k7w000595/T//RtmpF5155F/agTrend_0.11.tar.gz'  \
-  --library='/Users/devin.johnson@afsc.noaa.gov/Library/R' --with-keep.source 
+<pre><code>&gt; install.packages("agTrend.zip", repos=NULL)
+</code></pre>
 
-* installing *source* package 'agTrend' ...
+<p>If you have a mac replace with "agTrend.zip" with "agTrend.tgz".</p>
+
+<p><em>Downloading the source file</em>
+Source files for each version can be obtained <a href="https://drive.google.com/folderview?id=0B7NE3XGvDquORXpfb05xMWw2SHc&amp;usp=sharing">here</a>. The desired file can be downloaded and installed in the same way as with the binaries, e.g., </p>
+
+<pre><code>&gt; install.packages("agTrend_0.11.tar.gz", repos=NULL, type="source")
+</code></pre>
+
+<p><strong>Is it installed?</strong></p>
+
+<p>However you choose to install you should see some output that, hopefully, ends with:</p>
+
+<pre><code>* installing *source* package 'agTrend' ...
 ** R
 ** data
 ** demo
@@ -81,19 +81,7 @@ Installing agTrend
 * DONE (agTrend)
 </code></pre>
 
-<p><em>Downloading a binary file</em></p>
-
-<p>I have also placed copies of the binary installation files in a Google drive. Follow the following links for your operating system: <a href="https://docs.google.com/file/d/0B7NE3XGvDquOblh1YmRsSEVCTFk/edit?usp=sharing">Mac OSX</a> or <a href="">Windows</a>. If you are running a Linux machine, see the following section. <em>Note</em>: make sure your browser does not try to automatically unpack the file (this is the default for Safari, go into preferences to change this feature). </p>
-
-<p>After you download the file, open R and set the working directory (e.g., using <code>setwd("path/to/download/dir/")</code>). Once this is set, run</p>
-
-<pre><code>&gt;install.packages("agTrend.zip", repos=NULL)
-</code></pre>
-
-<p>If you have a mac replace with "agTrend.zip" with "agTrend.tgz".</p>
-
-<p><em>Downloading the source file</em>
-Source files for each version can be obtained <a href="https://drive.google.com/folderview?id=0B7NE3XGvDquORXpfb05xMWw2SHc&amp;usp=sharing">here</a>. The desired file can be downloaded and installed in the same way as with the binaries, replacing the file name.</p>
+<p>In which case, everything is installed.</p>
         </section>
 
         <aside id="sidebar">
