@@ -122,7 +122,8 @@ getSiteZIInits <- function(data.orig, abund.name, site.name, time.name,
 #' @param time.name  A character string giving the name of the time variable
 #' @param site.name  A character string giving the name of the site variable. The variable should be a factor
 #' @param sig.abund  A numeric vector the same length as \code{nrow(data)} which contains the known observation error standard deviations.
-#' @param ln.adj  The adjustment for taking logs of counts if zeros are present, e.g., y_st = log(N_st + ln.adj).
+#' @param forecast A logical indicating whether to allow forecasting aggregations past the last observed time.
+#' @param ln.adj  The adjustment for taking logs of counts if zeros are present, e.g., log(n + ln.adj).
 #' @param upper  A data frame containing the upper bounds for augmentation of each site. See 'Details'
 #' @param lower  A data frame containing the lower bounds for augmentation of each site. See 'Details'
 #' @param burn  The length of burnin for the MCMC augmentation and aggregation.
@@ -188,7 +189,7 @@ getSiteZIInits <- function(data.orig, abund.name, site.name, time.name,
 #' @import coda
 #' 
 mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, model.data,
-                           abund.name, time.name, site.name, sig.abund,
+                           abund.name, time.name, site.name, sig.abund, forecast=FALSE, 
                            ln.adj=0, upper=Inf, lower=-Inf,
                            burn, iter, thin=1, prior.list=NULL, 
                            keep.site.abund=FALSE, keep.site.param=FALSE, keep.obs.param=FALSE
@@ -224,12 +225,13 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   # DATA MANIPULATION / PREPARATION ###
   if(use.zi) ln.adj <- 0
   d.start <-  min(data[,time.name])
-  d.end <- max(data[,time.name])
+  if(!forecast) d.end <- max(data[,time.name])
+  else d.end <- max(max(data[,time.name]), end)
   d.yrs <- c(d.start:d.end)
   if(missing(start)) start <- d.start
   if(missing(end)) end <- d.end
   if(start<d.start) start <- d.start
-  if(end>d.end) end <- d.end
+  if(end>d.end & !forecast) end <- d.end
   data <- data[order(data[,site.name],data[ ,time.name]),]
   yrs <- c(start:end)
   siteNms <- levels(data[,site.name])

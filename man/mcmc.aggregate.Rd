@@ -4,10 +4,10 @@
 \usage{
   mcmc.aggregate(start, end, data, obs.formula = NULL,
     aggregation, model.data, abund.name, time.name,
-    site.name, sig.abund, ln.adj = 0, upper = Inf,
-    lower = -Inf, burn, iter, thin = 1, prior.list = NULL,
-    keep.site.abund = FALSE, keep.site.param = FALSE,
-    keep.obs.param = FALSE)
+    site.name, sig.abund, forecast = FALSE, ln.adj = 0,
+    upper = Inf, lower = -Inf, burn, iter, thin = 1,
+    prior.list = NULL, keep.site.abund = FALSE,
+    keep.site.param = FALSE, keep.obs.param = FALSE)
 }
 \arguments{
   \item{start}{The starting time for trend estimation}
@@ -39,8 +39,11 @@
   \code{nrow(data)} which contains the known observation
   error standard deviations.}
 
+  \item{forecast}{A logical indicating whether to allow
+  forecasting aggregations past the last observed time.}
+
   \item{ln.adj}{The adjustment for taking logs of counts if
-  zeros are present, e.g., y_st = log(N_st + ln.adj).}
+  zeros are present, e.g., log(n + ln.adj).}
 
   \item{upper}{A data frame containing the upper bounds for
   augmentation of each site. See 'Details'}

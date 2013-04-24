@@ -3,3 +3,4 @@
 ^data_proc$
 ^demo_results$
 ^builds$
+^\\.gitignore$
