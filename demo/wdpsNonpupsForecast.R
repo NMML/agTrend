@@ -80,8 +80,6 @@ rel.dat <- fit$aggregation.rel.summary
 rel.dat <- rel.dat[rel.dat$year %in% surv.yrs,]
 colnames(rel.dat)[3:5] <- paste(colnames(rel.dat)[3:5], "REL", sep="")
 ag.sum.data <- merge(ag.sum.data, rel.dat, all=TRUE)
-
-ag.nm <- names(new.agg.list.pred)[i]
 ag.sum.data[,"Region"] <- factor(ag.sum.data[,"Region"])
 
 
@@ -95,29 +93,43 @@ ggfig <- ggplot(ag.sum.data, aes(x=year, y=post.median.abund)) +
   xlab("\nYear") + ylab("Forecast count\n") + ggtitle("wDPS Region\n")
 ggsave("wdpstrendsForecast.pdf", ggfig)
 
-pe <- data.frame(Region=c("W ALEU", "C ALEU", "E ALEU", "W GULF", "C GULF", "E GULF"),
-                 rookeries = c(4, 12, 7, 5, 6, 3),
-                 pe.abund=round(4743*c(4, 12, 7, 5, 6, 3)/sum(c(4, 12, 7, 5, 6, 3)),0),
-                 pe.cnt=round(0.5*4743*c(4, 12, 7, 5, 6, 3)/sum(c(4, 12, 7, 5, 6, 3)),0)
+pe <- data.frame(Region=c("W ALEU", "C ALEU", "E ALEU", "W GULF", "C GULF", "E GULF", "Total"),
+                 rookeries = c(4, 12, 7, 5, 6, 3, 37),
+                 pe.abund=round(4743*c(4, 12, 7, 5, 6, 3, 37)/sum(c(4, 12, 7, 5, 6, 3)),0),
+                 pe.cnt=round(0.5*4743*c(4, 12, 7, 5, 6, 3, 37)/sum(c(4, 12, 7, 5, 6, 3)),0),
+                 Extinction.Prob.20=0,
+                 Extinction.Prob.50=0
                  )
+extinct <- function(x,val,year=73){1.0*any(x[1:year] < val)}
 
 region.mcmc <- fit$mcmc.sample$aggregated.pred.abund
 
-pe$Extinction.Prob.50=c(mean(region.mcmc[,colnames(region.mcmc)=="2062-W ALEU"]<=pe$pe.cnt[1]), 
-                        mean(region.mcmc[,colnames(region.mcmc)=="2062-C ALEU"]<=pe$pe.cnt[2]), 
-                        mean(region.mcmc[,colnames(region.mcmc)=="2062-E ALEU"]<=pe$pe.cnt[3]), 
-                        mean(region.mcmc[,colnames(region.mcmc)=="2062-W GULF"]<=pe$pe.cnt[4]), 
-                        mean(region.mcmc[,colnames(region.mcmc)=="2062-C GULF"]<=pe$pe.cnt[5]), 
-                        mean(region.mcmc[,colnames(region.mcmc)=="2062-E GULF"]<=pe$pe.cnt[6]))
+for(i in 1:6){
+  idx <- grep(pe$Region[i], colnames(region.mcmc))
+  Xmat <- region.mcmc[,idx]
+  pe$Extinction.Prob.20[i] <- mean(apply(Xmat, 1, extinct, val=pe$pe.cnt[i], year=43))
+  pe$Extinction.Prob.50[i] <- mean(apply(Xmat, 1, extinct, val=pe$pe.cnt[i], year=73))
+}
 
-pe$Extinction.Prob.20=c(mean(region.mcmc[,colnames(region.mcmc)=="2032-W ALEU"]<=pe$pe.cnt[1]), 
-                        mean(region.mcmc[,colnames(region.mcmc)=="2032-C ALEU"]<=pe$pe.cnt[2]), 
-                        mean(region.mcmc[,colnames(region.mcmc)=="2032-E ALEU"]<=pe$pe.cnt[3]), 
-                        mean(region.mcmc[,colnames(region.mcmc)=="2032-W GULF"]<=pe$pe.cnt[4]), 
-                        mean(region.mcmc[,colnames(region.mcmc)=="2032-C GULF"]<=pe$pe.cnt[5]), 
-                        mean(region.mcmc[,colnames(region.mcmc)=="2032-E GULF"]<=pe$pe.cnt[6]))
 
+# look at WDPS as a whole
+new.agg.data <- data.frame(site=levels(fit$original.data$site))
+new.agg.data$total <- "Total"
+new.agg.list.pred <- newAggregation(fit, new.agg.data, "pred")
+total.mcmc <- new.agg.list.pred[[1]]$mcmc.sample
+ag.sum.data <- new.agg.list.pred[[1]]$aggregation.pred.summary
+ggfig <- ggplot(ag.sum.data, aes(x=year, y=post.median.abund)) + 
+  geom_line() + 
+  geom_ribbon(aes(ymin=low90.hpd, ymax=hi90.hpd), alpha=0.4) + 
+  xlab("\nYear") + ylab("Forecast count\n") + ggtitle("wDPS Total\n")
+ggsave("wdpstrendsForecast_total.pdf", ggfig)
+
+Xmat <- total.mcmc$aggregated.pred.abund
+pe$Extinction.Prob.20[7] <- mean(apply(Xmat, 1, extinct, val=pe$pe.cnt[7], year=43))
+pe$Extinction.Prob.50[7] <- mean(apply(Xmat, 1, extinct, val=pe$pe.cnt[7], year=73))
 
 # Save the results-- uncomment to save
 write.csv(pe, file="wdpsPEresults.csv", row.names=FALSE)
-save(fit, pe, file="wdpsNonpupsForecastDemoResults.rda", compress=TRUE)
+save(fit, pe, new.agg.list.pred, file="wdpsNonpupsForecastDemoResults.rda", compress=TRUE)
+
+
