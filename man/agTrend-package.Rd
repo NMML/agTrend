@@ -22,8 +22,9 @@
 }
 \details{
   \tabular{ll}{ Package: \tab agTrend\cr Type: \tab
-  Package\cr Version: \tab 0.12\cr Date: \tab 2013-04-24\cr
-  License: \tab Unlimited\cr LazyLoad: \tab yes\cr }
+  Package\cr Version: \tab 0.12-1\cr Date: \tab
+  2013-06-04\cr License: \tab Unlimited\cr LazyLoad: \tab
+  yes\cr }
 }
 \author{
   Devin S. Johnson

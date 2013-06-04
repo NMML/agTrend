@@ -681,9 +681,11 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
 #' @param end A new end value for the time span
 #' @param type The type of trend calculated. Use \code{"pred"} for posterior predictive trends
 #' and \code{"rel"} to use the estimated, realized abumndance aggregation.
+#' @param order The order of trend calculated. Can be one of \code{"lin"}, for linear trends, 
+#' or, \code{"const"}, for mean log-abundence.
 #' @export
 #'  
-updateTrend <- function(x, start, end, type="pred"){
+updateTrend <- function(x, start, end, type="pred", order="lin"){
   require(coda)
   if(type=="pred" | is.null(x$mcmc.sample$aggregated.rel.abund)) smp <- x$mcmc.sample$aggregated.pred.abund
   else if(type=="rel") smp <- x$mcmc.sample$aggregated.rel.abund
@@ -700,12 +702,23 @@ updateTrend <- function(x, start, end, type="pred"){
   
   yrs <- c(start:end)
   ag.df <- expand.grid(yrs, levels(agg))
-  if(length(nms.agg)>1) ag.mm <- model.matrix(~(ag.df[,2]+0) + (ag.df[,1]:ag.df[,2]+0))
-  else ag.mm <- cbind(rep(1,nrow(ag.df)), yrs)
-  H <- solve(crossprod(ag.mm))%*%t(ag.mm)
-  y <- log(smp[,time.idx] + attr(x, "ln.adj"))
-  tsmp <- t(apply(y, 1, function(y){H%*%y}))
-  colnames(tsmp) <- c(paste(nms.agg, "(Intercept)"), paste(nms.agg, "(Trend)"))
+  if(order=="lin"){
+    if(length(nms.agg)>1) ag.mm <- model.matrix(~(ag.df[,2]+0) + (ag.df[,1]:ag.df[,2]+0))
+    else ag.mm <- cbind(rep(1,nrow(ag.df)), yrs)
+    H <- solve(crossprod(ag.mm))%*%t(ag.mm)
+    y <- log(smp[,time.idx] + attr(x, "ln.adj"))
+    tsmp <- t(apply(y, 1, function(y){H%*%y}))
+    colnames(tsmp) <- c(paste(nms.agg, "(Intercept)"), paste(nms.agg, "(Trend)"))
+  }
+  else if(order=="const"){
+    if(length(nms.agg)>1) ag.mm <- model.matrix(~(ag.df[,2]+0))
+    else ag.mm <- matrix(rep(1,nrow(ag.df)), ncol=1)
+    H <- solve(crossprod(ag.mm))%*%t(ag.mm)
+    y <- log(smp[,time.idx] + attr(x, "ln.adj"))
+    tsmp <- matrix(t(apply(y, 1, function(y){H%*%y})), ncol=ncol(ag.mm))
+    colnames(tsmp) <- c(paste(nms.agg, "(Intercept)"))
+  }
+  else stop("Unknown 'type' specified! See ?updateTrend.")
   return(mcmc(tsmp))
 }
 

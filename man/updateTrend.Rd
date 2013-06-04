@@ -2,7 +2,7 @@
 \alias{updateTrend}
 \title{Recalculate posterior predictive trend with a different time scale.}
 \usage{
-  updateTrend(x, start, end, type = "pred")
+  updateTrend(x, start, end, type = "pred", order = "lin")
 }
 \arguments{
   \item{x}{An mcmc augmentation object produced by a call
@@ -17,6 +17,10 @@
   \code{"pred"} for posterior predictive trends and
   \code{"rel"} to use the estimated, realized abumndance
   aggregation.}
+
+  \item{order}{The order of trend calculated. Can be one of
+  \code{"lin"}, for linear trends, or, \code{"const"}, for
+  mean log-abundence.}
 }
 \description{
   Recalculate posterior predictive trend with a different
