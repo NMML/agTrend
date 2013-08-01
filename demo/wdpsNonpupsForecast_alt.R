@@ -140,6 +140,6 @@ pe$Extinction.Prob.50[7] <- mean(apply(Xmat, 1, extinct, val=pe$pe.cnt[7], year=
 
 # Save the results-- uncomment to save
 write.csv(pe, file="wdpsPEresults.csv", row.names=FALSE)
-save(fit, pe, new.agg.list.pred, file="wdpsNonpupsForecastDemoResults.rda", compress=TRUE)
+save(fit, pe, new.agg.list.pred, file="wdpsNonpupsForecastDemoResults_alt.rda", compress=TRUE)
 
 
