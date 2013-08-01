@@ -1,4 +1,5 @@
-edpsPups              Runs an aggegated trend analysis of the Steller sea lion eDPS stock survey data 
-wdpsNonpups           Runs an aggegated trend analysis of the  Steller sea lions wDPS stock nonpup survey data
-wdpsPups              Runs an aggegated trend analysis of the  Steller sea lions wDPS stock pup survey data
-wdpsNonpupsForecast   Runs an aggegated forcast of the  Steller sea lions wDPS stock nonpup survey 
+edpsPups                  Runs an aggegated trend analysis of the Steller sea lion eDPS stock survey data 
+wdpsNonpups               Runs an aggegated trend analysis of the  Steller sea lions wDPS stock nonpup survey data
+wdpsPups                  Runs an aggegated trend analysis of the  Steller sea lions wDPS stock pup survey data
+wdpsNonpupsForecast       Runs an aggegated forcast of the  Steller sea lions wDPS stock nonpup survey 
+wdpsNonpupsForecast_alt   Runs an alternate version of the wdpsNonpupsForecast demo 

@@ -61,12 +61,12 @@ prior.list <- list(
 )
 
 ### Create upper bounds for predictive counts (= 3 x max(count) = 1.2^6)
-upper <- aggregate(wdpsNonpups$count, list(wdpsNonpups$site), function(x){(1.05^50)*max(x)})
-colnames(upper) <- c("site", "upper")
+upper <- Inf #aggregate(wdpsNonpups$count, list(wdpsNonpups$site), function(x){(1.05^50)*max(x)})
+#colnames(upper) <- c("site", "upper")
 
 ### Perform site augmentation and obtain posterior predictive distribution
 set.seed(123) 
-fit <- mcmc.aggregate(start=1990, end=2062, data=wdpsNonpups, obs.formula=~obl-1, model.data=wdpsModels, aggregation="Region",
+fit <- mcmc.aggregate(start=1990, end=2112, data=wdpsNonpups, obs.formula=~obl-1, model.data=wdpsModels, aggregation="Region",
                       abund.name="count", time.name="year", site.name="site", forecast=TRUE,
                       burn=1000, iter=15000, thin=5, prior.list=prior.list, upper=upper, 
                       keep.site.param=TRUE, keep.site.abund=TRUE, keep.obs.param=TRUE)
