@@ -39,7 +39,7 @@ iar.Q <- function(n,p)
 }
 
 getSiteREInits <- function(data, abund.name, site.name, time.name, ln.adj, 
-                           Q0.s, r0.s, a.tau, b.tau, newdata, model.data){
+                           Q0.eta.s, r0.eta.s, a.tau, b.tau, newdata, model.data){
   require(mgcv)
   data$y <- log(data[,abund.name]+ln.adj)
   eta <- NULL
@@ -62,7 +62,7 @@ getSiteREInits <- function(data, abund.name, site.name, time.name, ln.adj,
       eta.tmp <- predict(fit, newdata=newdata)
       lm.fit <- lm(eta.tmp~newdata[,1])
       eta.tmp <- matrix(residuals(lm.fit), ncol=1)
-      tau <- c(tau, (a.tau+r0.s/2 -1)/(b.tau + as.vector(crossprod(eta.tmp, Q0.s)%*%eta.tmp)/2))
+      tau <- c(tau, (a.tau+r0.eta.s/2 -1)/(b.tau + as.vector(crossprod(eta.tmp, Q0.eta.s)%*%eta.tmp)/2))
       eta <- c(eta, eta.tmp)
       b <- c(b, as.vector(coef(lm.fit)))
       xi <- c(xi, 1/var(residuals(fit)))
@@ -74,7 +74,7 @@ getSiteREInits <- function(data, abund.name, site.name, time.name, ln.adj,
 }
 
 getSiteZIInits <- function(data.orig, abund.name, site.name, time.name,
-                           Q0.s, r0.s, a.phi, b.phi, newdata, model.data){
+                           Q0.alpha.s, r0.eta.s, a.phi, b.phi, newdata, model.data){
   require(mgcv)
   data.orig$y <- 1.0*(data.orig[,abund.name]>0)
   alpha <- NULL
@@ -96,7 +96,7 @@ getSiteZIInits <- function(data.orig, abund.name, site.name, time.name,
       alpha.tmp <- predict(fit, newdata=newdata)
       lm.fit <- lm(alpha.tmp~newdata[,1])
       alpha.tmp <- matrix(residuals(lm.fit), ncol=1)
-      phi <- c(phi, (a.phi+r0.s/2 -1)/(b.phi + as.vector(crossprod(alpha.tmp, Q0.s)%*%alpha.tmp)/2))
+      phi <- c(phi, (a.phi+r0.alpha.s/2 -1)/(b.phi + as.vector(crossprod(alpha.tmp, Q0.alpha.s)%*%alpha.tmp)/2))
       alpha <- c(alpha, alpha.tmp)
       theta <- c(theta, as.vector(coef(lm.fit)))
     }
@@ -141,10 +141,10 @@ getSiteZIInits <- function(data.orig, abund.name, site.name, time.name,
 #' modeled, in its most general form, with a zero-inflated, nonparameteric model,
 #' \deqn{z_{st} = \beta_{s0} + \beta_{s1}t + \eta_{st} + \delta_{st} \mbox{ if } N_{st}>0,}{z_st = beta_s0 + beta_s1 * t + eta_st + delta_st if N_st > 0,}
 #' where \eqn{\beta_{s0}+\beta_{s1}t}{beta_s0 + beta_s1 * t} is the linear 
-#' trend, \eqn{\eta}{eta} is a random walk of order 2 (RW2), and \eqn{\delta_{st}}{delta_st} is an iid normal error variable. The zero-inflation part is added via 
+#' trend, \eqn{\eta}{eta} is a random walk of order 2 (RW), and \eqn{\delta_{st}}{delta_st} is an iid normal error variable. The zero-inflation part is added via 
 #' the probit regression model
 #' \deqn{\mbox{probit}\{P(N_{st}>0)\} = \theta_{s0} + \theta_{s1}t + \alpha_{st},}{probit{P(N_st > 0)} = theta_s0 + theta_s1 * t + alpha_st,}
-#' where \eqn{\theta_{s0}}{theta_s0} and \eqn{\theta_{s1}}{theta_s1} are linear regression coefficients and \eqn{\alpha}{alpha} is a RW2 model.
+#' where \eqn{\theta_{s0}}{theta_s0} and \eqn{\theta_{s1}}{theta_s1} are linear regression coefficients and \eqn{\alpha}{alpha} is a RW model.
 #' 
 #' In order to account for observation effects or changing methodology through time one can specify an \code{obs.model}. The \code{obs.model} is a R formula object 
 #' that specifies variables in \code{data} that can account for differences due to sampling methodology alone. If \code{obs.model} is provided, the observation model is specified as
@@ -165,8 +165,8 @@ getSiteZIInits <- function(data.orig, abund.name, site.name, time.name,
 #' or, if zero-inflation is not necessary. The \code{model.data} must be a \code{data.frame} with columns 
 #' \itemize{
 #' \item{\code{site.name}- Column of all the sites in \code{data}. The name must be given by \code{site.name}}
-#' \item{\code{trend}- A column of all augmentation models to be used at each site, can be one, any only one, of the following: \code{c("const","lin","RW2")}
-#' for a constant mean, linear mean, RW2 model respectively. Each generalization includes all previous models, e.g., an RW2 model contains a linear slope and 
+#' \item{\code{trend}- A column of all augmentation models to be used at each site, can be one, any only one, of the following: \code{c("const","lin","RW")}
+#' for a constant mean, linear mean, RW model respectively. Each generalization includes all previous models, e.g., an RW model contains a linear slope and 
 #' an intercept.}
 #' \item{\code{zero.infl}- The same as the \code{trend} column, except this specifies the model for the zero-inflation component and can additionally include \code{"none"}
 #' if a zero-inflation model is not desired.}
@@ -188,7 +188,7 @@ getSiteZIInits <- function(data.orig, abund.name, site.name, time.name,
 #' @import Matrix
 #' @import coda
 #' 
-mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, model.data,
+mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, model.data, rw.order=list(eta=1, alpha=1),
                            abund.name, time.name, site.name, sig.abund, forecast=FALSE, 
                            ln.adj=0, upper=Inf, lower=-Inf,
                            burn, iter, thin=1, prior.list=NULL, 
@@ -200,16 +200,16 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   if(use.trunc) require(truncnorm)
   use.zi <- !is.null(model.data$zero.infl)
   if(use.zi) use.zi <- any(model.data$zero.infl!="none")
-  if(use.zi) use.alpha <- any(model.data$zero.infl=="RW2")
+  if(use.zi) use.alpha <- any(model.data$zero.infl=="RW")
   else use.alpha <- FALSE
   use.gam <- !is.null(obs.formula)
-  use.eta <- any(model.data$trend=="RW2")
+  use.eta <- any(model.data$trend=="RW")
 
-  if(use.zi & !all(model.data$zero.infl%in%c("none","const","lin","RW2"))){
-    stop("\n Error: currently the only models for zero-inflation are: 'none', 'const', 'lin', or 'RW2'\n")
+  if(use.zi & !all(model.data$zero.infl%in%c("none","const","lin","RW"))){
+    stop("\n Error: currently the only models for zero-inflation are: 'none', 'const', 'lin', or 'RW'\n")
   }
-  if(!all(model.data$trend%in%c("const","lin","RW2"))){
-    stop("\n Error: currently the only models for trend are: 'const', 'lin', or 'RW2'\n")
+  if(!all(model.data$trend%in%c("const","lin","RW"))){
+    stop("\n Error: currently the only models for trend are: 'const', 'lin', or 'RW'\n")
   }
 
   
@@ -256,14 +256,14 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   if(is.data.frame(lower)) lower <- log(merge(data.frame(site.idx), lower, by.y=site.name, by.x=1)$lower + ln.adj)
   # eta
   if(use.eta){
-    etarw2.data <- merge(data.frame(site.idx), model.data, by.y=site.name, by.x=1)
-    etarw2 <- c(etarw2.data$trend=="RW2")
+    etarw.data <- merge(data.frame(site.idx), model.data, by.y=site.name, by.x=1)
+    etarw <- c(etarw.data$trend=="RW")
   }
   # alpha and fixed q
   q.data <- merge(data.frame(site.idx), model.data, by.y=site.name, by.x=1)
   if(use.alpha){
-    qrw2 <- c(q.data$zero.infl=="RW2")[q.data[,1]%in%model.data[model.data$zero.infl!="none",site.name]]
-    Nqrw2 <- sum(qrw2)
+    qrw <- c(q.data$zero.infl=="RW")[q.data[,1]%in%model.data[model.data$zero.infl!="none",site.name]]
+    Nqrw <- sum(qrw)
   }
   qzi <- c(q.data$zero.infl!="none")
   Nzi <- sum(qzi)
@@ -291,15 +291,26 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
                       else return(cbind(rep(1,n.year),d.yrs))                         
                      }))
   # create constraint matrix for eta
+  eta.order=rw.order$eta
   if(use.eta){
-    Xz.rw2 <- .bdiag(lapply(model.data$trend[model.data$trend=="RW2"], 
+    if(eta.order==2){
+    Xz.rw <- .bdiag(lapply(model.data$trend[model.data$trend=="RW"], 
                             function(x){
                               if(x=="const"){return(matrix(rep(1,n.year), ncol=1))}
                               else return(cbind(rep(1,n.year),d.yrs))                         
                             }))
-    A <- solve(crossprod(Xz.rw2), t(Xz.rw2))
+    }
+    else{
+      Xz.rw <- .bdiag(lapply(model.data$trend[model.data$trend=="RW"], 
+                             function(x){
+                               if(x=="const"){return(matrix(rep(1,n.year), ncol=1))}
+                               else return(rep(1,n.year))                         
+                             }))
+    }
+    A <- solve(crossprod(Xz.rw), t(Xz.rw))
   }
   # create design matrix for q fixed-only sites
+  alpha.order=rw.order$alpha
   if(use.zi){
     Xq <- .bdiag(lapply(model.data$zero.infl[model.data$zero.infl!="none"], 
                             function(x){
@@ -311,10 +322,12 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   if(!missing(sig.abund)) Qeps <- Diagonal(1/data[,sig.abund]^2)
   else Qeps <- Diagonal(x=rep(1.0E8, length(y)))
   # Precision for eta and alpha
-  Q0.s <- Matrix(iar.Q(n.year, 2))
-  r0.s <- dim(Q0.s)[1] - 2
-  if(use.eta) Qeta.0 <- kronecker(Diagonal(sum(model.data$trend=="RW2")), Q0.s)
-  if(use.alpha) Qalpha.0 <- kronecker(Diagonal(sum(model.data$zero.infl=="RW2")), Q0.s)
+  Q0.eta.s <- Matrix(iar.Q(n.year, eta.order))
+  Q0.alpha.s <- Matrix(iar.Q(n.year, alpha.order))
+  r0.eta.s <- dim(Q0.eta.s)[1] - eta.order
+  r0.alpha.s <- dim(Q0.alpha.s)[1] - alpha.order
+  if(use.eta) Qeta.0 <- kronecker(Diagonal(sum(model.data$trend=="RW")), Q0.eta.s)
+  if(use.alpha) Qalpha.0 <- kronecker(Diagonal(sum(model.data$zero.infl=="RW")), Q0.alpha.s)
   
   # PRIORS ###
   #gamma
@@ -397,7 +410,7 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   
   if(use.zi){
     inits.zi <- suppressWarnings(getSiteZIInits(data.orig, abund.name, site.name, time.name, 
-                          Q0.s, r0.s, a.phi, b.phi, newdata, model.data))
+                          Q0.alpha.s, r0.alpha.s, a.phi, b.phi, newdata, model.data))
     a <- inits.zi$alpha
     theta <- inits.zi$theta
     phi <- inits.zi$phi
@@ -412,7 +425,7 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
     z.01.tilde <- rtruncnorm(Nzi, a=a.zi[qzi], b=b.zi[qzi], mean=q, sd=1)
   }
   inits <- getSiteREInits(data, abund.name, site.name, time.name, 
-                          ln.adj, Q0.s, r0.s, a.tau, b.tau, newdata, model.data)
+                          ln.adj, Q0.eta.s, r0.eta.s, a.tau, b.tau, newdata, model.data)
   
   #beta
   b <- inits$b
@@ -477,14 +490,14 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
     p.stor <- matrix(nrow=iter, ncol=n.year*sum(model.data$zero.infl!="none")) 
     colnames(p.stor) <- apply(expand.grid(d.yrs, as.character(model.data[model.data$zero.infl!="none",site.name])),1,paste,collapse=":")
     if(use.alpha){
-      phi.stor <- matrix(nrow=iter, ncol=sum(model.data$zero.infl=="RW2"))
-      colnames(phi.stor) <- as.character(model.data[model.data$zero.infl=="RW2", site.name])
+      phi.stor <- matrix(nrow=iter, ncol=sum(model.data$zero.infl=="RW"))
+      colnames(phi.stor) <- as.character(model.data[model.data$zero.infl=="RW", site.name])
     }
   }
   #tau and xi
   if(keep.site.param){
-    tau.stor <- matrix(nrow=iter, ncol=sum(model.data$trend=="RW2"))
-    colnames(tau.stor) <- as.character(model.data[model.data$trend=="RW2", site.name])
+    tau.stor <- matrix(nrow=iter, ncol=sum(model.data$trend=="RW"))
+    colnames(tau.stor) <- as.character(model.data[model.data$trend=="RW", site.name])
     xi.stor <- matrix(nrow=iter, ncol=n.site)
     colnames(xi.stor) <- as.character(levels(data.orig[,site.name]))
   }
@@ -504,10 +517,10 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
       #alpha, phi, and z.01.tilde
       if(use.alpha){
         D.alpha <- Ialpha + Qalpha
-        d.alpha <- (z.01.tilde[qrw2]-muq[qrw2])
-        a[qrw2] <- as.vector(solve(D.alpha,d.alpha) + solve(chol(D.alpha), rnorm(Nqrw2,0,1)))
-        b1.phi <- b.phi + aggregate(a[qrw2], list(site.idx[qzi][qrw2]), FUN=function(x,Q0.s){crossprod(x, Q0.s)%*%x}, Q0.s=as.matrix(Q0.s))$x/2
-        a1.phi <- a.phi + r0.s/2
+        d.alpha <- (z.01.tilde[qrw]-muq[qrw])
+        a[qrw] <- as.vector(solve(D.alpha,d.alpha) + solve(chol(D.alpha), rnorm(Nqrw,0,1)))
+        b1.phi <- b.phi + aggregate(a[qrw], list(site.idx[qzi][qrw]), FUN=function(x,Q0.s){crossprod(x, Q0.s)%*%x}, Q0.s=as.matrix(Q0.alpha.s))$x/2
+        a1.phi <- a.phi + r0.alpha.s/2
         phi <- rgamma(length(b1.phi), a1.phi, b1.phi)
         Phi <- Diagonal(x=rep(phi, each=n.year))
         Qalpha <- Phi %*% Qalpha.0
@@ -535,15 +548,15 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
     muz <- Xz%*%b
     
     #update eta
-    D.eta <- Qdelta[etarw2,etarw2] + Qeta
-    d.eta <- Qdelta[etarw2,etarw2]%*%(z[etarw2]-muz[etarw2])
-    eta[etarw2] <- as.vector(solve(D.eta,d.eta) + solve(chol(D.eta), rnorm(sum(etarw2),0,1)))
-    eta[etarw2] <- as.vector(eta[etarw2] - (D.eta%*%t(A)) %*% solve(A%*%D.eta%*%t(A)) %*% (A%*%eta[etarw2]))
+    D.eta <- Qdelta[etarw,etarw] + Qeta
+    d.eta <- Qdelta[etarw,etarw]%*%(z[etarw]-muz[etarw])
+    eta[etarw] <- as.vector(solve(D.eta,d.eta) + solve(chol(D.eta), rnorm(sum(etarw),0,1)))
+    eta[etarw] <- as.vector(eta[etarw] - (D.eta%*%t(A)) %*% solve(A%*%D.eta%*%t(A)) %*% (A%*%eta[etarw]))
     
     #update tau
-    b1.tau <- b.tau + aggregate(as.vector(eta[etarw2]), list(site.idx[etarw2]), FUN=function(x,Q0.s){crossprod(x, Q0.s)%*%x}, Q0.s=as.matrix(Q0.s))$x/2
-    a1.tau <- a.tau + r0.s/2
-    tau <- rgamma(sum(model.data$trend=="RW2"), a1.tau, b1.tau)
+    b1.tau <- b.tau + aggregate(as.vector(eta[etarw]), list(site.idx[etarw]), FUN=function(x,Q0.s){crossprod(x, Q0.s)%*%x}, Q0.s=as.matrix(Q0.eta.s))$x/2
+    a1.tau <- a.tau + r0.eta.s/2
+    tau <- rgamma(sum(model.data$trend=="RW"), a1.tau, b1.tau)
     Tau <- Diagonal(x=rep(tau, each=n.year))
     Qeta <- Tau %*% Qeta.0
     
