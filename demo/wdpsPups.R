@@ -1,3 +1,4 @@
+library(agTrend)
 data(wdpsPups)
 
 ### Subset data to post-1989
@@ -20,7 +21,7 @@ wdpsModels <- data.frame(site=num.surv[,1])
 #   0-5 nonzero counts = constant trend signal
 #   6-10 nonzero counts = linear trend signal
 #   >10 nonzero counts = RW2 (i.e., spline) trend signal
-wdpsModels$trend <- cut(nz.counts[,2], c(0,5,10,30), labels=c("const","lin","RW2"))
+wdpsModels$trend <- cut(nz.counts[,2], c(0,5,10,30), labels=c("const","lin","RW"))
 # Zero inflation models:
 #   0-5 surveys = constant inflation effect
 #   >5 surveys = linear inflation effect
@@ -56,7 +57,7 @@ colnames(upper) <- c("site", "upper")
 
 ### Perform site augmentation and obtain posterior predictive distribution
 set.seed(123)
-fit <- mcmc.aggregate(start=1990, end=2012, data=wdpsPups, model.data=wdpsModels,
+fit <- mcmc.aggregate(start=1990, end=2012, data=wdpsPups, model.data=wdpsModels, rw.order=list(eta=2),
                       abund.name="count", time.name="year", site.name="site", 
                       burn=1000, iter=5000, thin=5, prior.list=prior.list, upper=upper, 
                       keep.site.param=TRUE, keep.site.abund=TRUE, keep.obs.param=TRUE)

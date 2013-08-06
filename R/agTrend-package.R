@@ -9,7 +9,7 @@
 #' allows incorporation of both parameter uncertainty as well as uncertainty due to sampling the local abundance processes.
 #' 
 #' \tabular{ll}{ Package: \tab agTrend\cr Type: \tab Package\cr Version: \tab
-#' 0.13\cr Date: \tab 2013-06-04\cr License: \tab Unlimited\cr LazyLoad: \tab
+#' 0.14\cr Date: \tab 2013-08-06\cr License: \tab Unlimited\cr LazyLoad: \tab
 #' yes\cr }
 #' 
 #' @name agTrend-package

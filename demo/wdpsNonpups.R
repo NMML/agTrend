@@ -25,7 +25,7 @@ wdpsModels <- data.frame(site=num.surv[,1])
 #   0-5 nonzero counts = constant trend signal
 #   6-10 nonzero counts = linear trend signal
 #   >10 nonzero counts = RW2 (i.e., spline) trend signal
-wdpsModels$trend <- cut(nz.counts[,2], c(0,5,10,30), labels=c("const","lin","RW2"))
+wdpsModels$trend <- cut(nz.counts[,2], c(0,5,10,30), labels=c("const","lin","RW"))
 # Zero inflation models:
 #   0-5 surveys = constant inflation effect
 #   >5 surveys = linear inflation effect
@@ -65,7 +65,8 @@ colnames(upper) <- c("site", "upper")
 
 ### Perform site augmentation and obtain posterior predictive distribution
 set.seed(123) 
-fit <- mcmc.aggregate(start=1990, end=2012, data=wdpsNonpups, obs.formula=~obl-1, model.data=wdpsModels, aggregation="Region",
+fit <- mcmc.aggregate(start=1990, end=2012, data=wdpsNonpups, obs.formula=~obl-1, model.data=wdpsModels, 
+                      rw.order=list(eta=2), aggregation="Region",
                       abund.name="count", time.name="year", site.name="site", 
                       burn=1000, iter=5000, thin=5, prior.list=prior.list, upper=upper, 
                       keep.site.param=TRUE, keep.site.abund=TRUE, keep.obs.param=TRUE)
@@ -95,11 +96,27 @@ fitdat$trend2000[fitdat$year<2000] <- NA
 
 # Make a plot of the results (requires ggplot2 package)
 library(ggplot2)
-wdpsfig <- ggplot(fitdat, aes(x=year, y=post.median.abund, color=Region)) +
-  geom_line(aes(y=post.median.abund)) +
-  geom_ribbon(aes(ymin=low90.hpd, ymax=hi90.hpd, fill=Region), alpha=0.15) +
-  geom_line(aes(y=trend2000,color=Region),lwd=3, data=fitdat[fitdat$year>=2000,]) + 
-  xlab("Year") + ylab("WDPS estimated abundance")
+surv.yrs <- unique(fit$original.data$year)
+ag.sum.data <- fit$aggregation.pred.summary
+rel.dat <- fit$aggregation.rel.summary
+rel.dat <- rel.dat[rel.dat$year %in% surv.yrs,]
+colnames(rel.dat)[3:5] <- paste(colnames(rel.dat)[3:5], "REL", sep="")
+ag.sum.data <- merge(ag.sum.data, rel.dat, all=TRUE)
+ag.nm <- "Region"
+ag.sum.data[,ag.nm] <- factor(ag.sum.data[,ag.nm])
+b <- apply(trend2000, 2, median)
+X <- model.matrix(~(ag.sum.data[,ag.nm]-1) + (ag.sum.data[,ag.nm]-1):(year), data=ag.sum.data)
+ag.sum.data$trend2000 <- apply(apply(as.matrix(trend2000), 1, FUN=function(b,Mat){as.vector(exp(Mat%*%b))}, Mat=X), 1, median)
+ag.sum.data$trend2000[ag.sum.data$year<2000] <- NA
+ag.sum.data$Region = factor(ag.sum.data$Region, 
+                            levels=c("W ALEU", "C ALEU", "E ALEU", "W GULF", "C GULF", "E GULF"))
+wdpsfig <- ggplot(ag.sum.data, aes(x=year, y=post.median.abund)) + 
+  geom_line() + 
+  geom_ribbon(aes(ymin=low90.hpd, ymax=hi90.hpd), alpha=0.4) + 
+  geom_line(aes(y=trend2000), color="blue", lwd=1.5) + 
+  geom_pointrange(aes(y=post.median.abundREL, ymin=low90.hpdREL, ymax=hi90.hpdREL)) + 
+  facet_wrap(~Region, ncol=2) +
+  xlab("\nYear") + ylab("Aggregated count\n")
 ggsave("wdpstrends.pdf", wdpsfig)
 
 # Examine a couple of specific sites

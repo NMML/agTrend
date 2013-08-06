@@ -74,7 +74,7 @@ getSiteREInits <- function(data, abund.name, site.name, time.name, ln.adj,
 }
 
 getSiteZIInits <- function(data.orig, abund.name, site.name, time.name,
-                           Q0.alpha.s, r0.eta.s, a.phi, b.phi, newdata, model.data){
+                           Q0.alpha.s, r0.alpha.s, a.phi, b.phi, newdata, model.data){
   require(mgcv)
   data.orig$y <- 1.0*(data.orig[,abund.name]>0)
   alpha <- NULL
@@ -118,6 +118,7 @@ getSiteZIInits <- function(data.orig, abund.name, site.name, time.name,
 #' @param obs.formula  A formula object specifying the model for the observation data
 #' @param aggregation  A factor variable. Aggregation is performed over each level of the factor.
 #' @param model.data  A data frame giving the augmentation model for each site. See 'Details'
+#' @param rw.order A names list, e.g., \code{list(eta=2, alpha=2)}, that gives the order of the RW process for the trend and ZI models.
 #' @param abund.name  A character string giving the name of the data to be aggregated
 #' @param time.name  A character string giving the name of the time variable
 #' @param site.name  A character string giving the name of the site variable. The variable should be a factor
@@ -141,7 +142,7 @@ getSiteZIInits <- function(data.orig, abund.name, site.name, time.name,
 #' modeled, in its most general form, with a zero-inflated, nonparameteric model,
 #' \deqn{z_{st} = \beta_{s0} + \beta_{s1}t + \eta_{st} + \delta_{st} \mbox{ if } N_{st}>0,}{z_st = beta_s0 + beta_s1 * t + eta_st + delta_st if N_st > 0,}
 #' where \eqn{\beta_{s0}+\beta_{s1}t}{beta_s0 + beta_s1 * t} is the linear 
-#' trend, \eqn{\eta}{eta} is a random walk of order 2 (RW), and \eqn{\delta_{st}}{delta_st} is an iid normal error variable. The zero-inflation part is added via 
+#' trend, \eqn{\eta}{eta} is a random walk (of order 1 or 2) (RW), and \eqn{\delta_{st}}{delta_st} is an iid normal error variable. The zero-inflation part is added via 
 #' the probit regression model
 #' \deqn{\mbox{probit}\{P(N_{st}>0)\} = \theta_{s0} + \theta_{s1}t + \alpha_{st},}{probit{P(N_st > 0)} = theta_s0 + theta_s1 * t + alpha_st,}
 #' where \eqn{\theta_{s0}}{theta_s0} and \eqn{\theta_{s1}}{theta_s1} are linear regression coefficients and \eqn{\alpha}{alpha} is a RW model.
@@ -188,7 +189,7 @@ getSiteZIInits <- function(data.orig, abund.name, site.name, time.name,
 #' @import Matrix
 #' @import coda
 #' 
-mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, model.data, rw.order=list(eta=1, alpha=1),
+mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, model.data, rw.order=NULL,
                            abund.name, time.name, site.name, sig.abund, forecast=FALSE, 
                            ln.adj=0, upper=Inf, lower=-Inf,
                            burn, iter, thin=1, prior.list=NULL, 
@@ -291,7 +292,8 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
                       else return(cbind(rep(1,n.year),d.yrs))                         
                      }))
   # create constraint matrix for eta
-  eta.order=rw.order$eta
+  if(!is.null(rw.order$eta)) eta.order=rw.order$eta
+  else eta.order=1
   if(use.eta){
     if(eta.order==2){
     Xz.rw <- .bdiag(lapply(model.data$trend[model.data$trend=="RW"], 
@@ -310,7 +312,8 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
     A <- solve(crossprod(Xz.rw), t(Xz.rw))
   }
   # create design matrix for q fixed-only sites
-  alpha.order=rw.order$alpha
+  if(!is.null(rw.order$alpha)) alpha.order=rw.order$alpha
+  else alpha.order=1
   if(use.zi){
     Xq <- .bdiag(lapply(model.data$zero.infl[model.data$zero.infl!="none"], 
                             function(x){

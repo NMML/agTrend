@@ -4,7 +4,7 @@ data(edpsPups)
 edpsPups$abund <- edpsPups$count*4.5
 
 # Define models to update within each region
-edpsModels <- data.frame(region=levels(edpsPups$region), trend=c("RW2","lin","lin","RW2"))
+edpsModels <- data.frame(region=levels(edpsPups$region), trend=c("RW","lin","lin","RW"))
 
 # Define priors for regional trend parameters
 library(Matrix)
@@ -31,7 +31,7 @@ colnames(upper) <- c("region", "upper")
 
 # Fit the site models and estimate aggregated trend summary
 set.seed(123)
-fit <- mcmc.aggregate(start=1979, end=2010, data=edpsPups, model.data=edpsModels,
+fit <- mcmc.aggregate(start=1979, end=2010, data=edpsPups, model.data=edpsModels, rw.order=list(eta=2),
                       abund.name="abund", time.name="year", site.name="region", 
                       burn=1000, iter=5000, thin=5, prior.list=prior.list, upper=upper, 
                       keep.site.param=TRUE, keep.site.abund=TRUE, keep.obs.param=TRUE)
@@ -45,7 +45,7 @@ fitdat <- fitdat[order(fitdat$region, fitdat$year),]
 
 # Make a plot of the results (requires ggplot2 package)
 library(ggplot2)
-plt <- ggplot(aes(x=year, y=abund, color=region), data=fitdat) + #[fitdat$region%in%c("Total","CA","OR"),]) +
+plt <- ggplot(aes(x=year, y=abund, color=region), data=fitdat) + 
   geom_point(size=3) +
   geom_line(aes(y=post.median.abund)) +
   geom_ribbon(aes(ymin=low90.hpd, ymax=hi90.hpd, fill=region), alpha=0.25) +

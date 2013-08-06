@@ -3,10 +3,10 @@
 \title{Posterior predictive sampling, aggregtion of abundance counts, and linear trend summary}
 \usage{
   mcmc.aggregate(start, end, data, obs.formula = NULL,
-    aggregation, model.data, abund.name, time.name,
-    site.name, sig.abund, forecast = FALSE, ln.adj = 0,
-    upper = Inf, lower = -Inf, burn, iter, thin = 1,
-    prior.list = NULL, keep.site.abund = FALSE,
+    aggregation, model.data, rw.order = NULL, abund.name,
+    time.name, site.name, sig.abund, forecast = FALSE,
+    ln.adj = 0, upper = Inf, lower = -Inf, burn, iter,
+    thin = 1, prior.list = NULL, keep.site.abund = FALSE,
     keep.site.param = FALSE, keep.obs.param = FALSE)
 }
 \arguments{
@@ -25,6 +25,10 @@
 
   \item{model.data}{A data frame giving the augmentation
   model for each site. See 'Details'}
+
+  \item{rw.order}{A names list, e.g., \code{list(eta=2,
+  alpha=2)}, that gives the order of the RW process for the
+  trend and ZI models.}
 
   \item{abund.name}{A character string giving the name of
   the data to be aggregated}
@@ -100,16 +104,16 @@
   if } N_{st}>0,}{z_st = beta_s0 + beta_s1 * t + eta_st +
   delta_st if N_st > 0,} where
   \eqn{\beta_{s0}+\beta_{s1}t}{beta_s0 + beta_s1 * t} is
-  the linear trend, \eqn{\eta}{eta} is a random walk of
-  order 2 (RW2), and \eqn{\delta_{st}}{delta_st} is an iid
-  normal error variable. The zero-inflation part is added
-  via the probit regression model
+  the linear trend, \eqn{\eta}{eta} is a random walk (of
+  order 1 or 2) (RW), and \eqn{\delta_{st}}{delta_st} is an
+  iid normal error variable. The zero-inflation part is
+  added via the probit regression model
   \deqn{\mbox{probit}\{P(N_{st}>0)\} = \theta_{s0} +
   \theta_{s1}t + \alpha_{st},}{probit{P(N_st > 0)} =
   theta_s0 + theta_s1 * t + alpha_st,} where
   \eqn{\theta_{s0}}{theta_s0} and
   \eqn{\theta_{s1}}{theta_s1} are linear regression
-  coefficients and \eqn{\alpha}{alpha} is a RW2 model.
+  coefficients and \eqn{\alpha}{alpha} is a RW model.
 
   In order to account for observation effects or changing
   methodology through time one can specify an
@@ -156,9 +160,9 @@
   \code{data}. The name must be given by \code{site.name}}
   \item{\code{trend}- A column of all augmentation models
   to be used at each site, can be one, any only one, of the
-  following: \code{c("const","lin","RW2")} for a constant
-  mean, linear mean, RW2 model respectively. Each
-  generalization includes all previous models, e.g., an RW2
+  following: \code{c("const","lin","RW")} for a constant
+  mean, linear mean, RW model respectively. Each
+  generalization includes all previous models, e.g., an RW
   model contains a linear slope and an intercept.}
   \item{\code{zero.infl}- The same as the \code{trend}
   column, except this specifies the model for the

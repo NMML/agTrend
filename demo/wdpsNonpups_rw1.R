@@ -60,14 +60,13 @@ prior.list <- list(
 )
 
 ### Create upper bounds for predictive counts (= 3 x max(count) = 1.2^6)
-upper=Inf
-#upper <- aggregate(wdpsNonpups$count, list(wdpsNonpups$site), function(x){3*max(x)})
-#colnames(upper) <- c("site", "upper")
+upper <- aggregate(wdpsNonpups$count, list(wdpsNonpups$site), function(x){3*max(x)})
+colnames(upper) <- c("site", "upper")
 
 ### Perform site augmentation and obtain posterior predictive distribution
 set.seed(123) 
-fit <- mcmc.aggregate(start=1990, end=2012, data=wdpsNonpups, obs.formula=~obl-1, model.data=wdpsModels,rw.order=list(eta=1,alpha=1)
-                      aggregation="Region",
+fit <- mcmc.aggregate(start=1990, end=2012, data=wdpsNonpups, obs.formula=~obl-1, model.data=wdpsModels, 
+                      rw.order=list(eta=1), aggregation="Region",
                       abund.name="count", time.name="year", site.name="site", 
                       burn=1000, iter=5000, thin=5, prior.list=prior.list, upper=upper, 
                       keep.site.param=TRUE, keep.site.abund=TRUE, keep.obs.param=TRUE)
@@ -97,12 +96,28 @@ fitdat$trend2000[fitdat$year<2000] <- NA
 
 # Make a plot of the results (requires ggplot2 package)
 library(ggplot2)
-wdpsfig <- ggplot(fitdat, aes(x=year, y=post.median.abund, color=Region)) +
-  geom_line(aes(y=post.median.abund)) +
-  geom_ribbon(aes(ymin=low90.hpd, ymax=hi90.hpd, fill=Region), alpha=0.15) +
-  geom_line(aes(y=trend2000,color=Region),lwd=3, data=fitdat[fitdat$year>=2000,]) + 
-  xlab("Year") + ylab("WDPS estimated abundance")
-ggsave("wdpstrends.pdf", wdpsfig)
+surv.yrs <- unique(fit$original.data$year)
+ag.sum.data <- fit$aggregation.pred.summary
+rel.dat <- fit$aggregation.rel.summary
+rel.dat <- rel.dat[rel.dat$year %in% surv.yrs,]
+colnames(rel.dat)[3:5] <- paste(colnames(rel.dat)[3:5], "REL", sep="")
+ag.sum.data <- merge(ag.sum.data, rel.dat, all=TRUE)
+ag.nm <- "Region"
+ag.sum.data[,ag.nm] <- factor(ag.sum.data[,ag.nm])
+b <- apply(trend2000, 2, median)
+X <- model.matrix(~(ag.sum.data[,ag.nm]-1) + (ag.sum.data[,ag.nm]-1):(year), data=ag.sum.data)
+ag.sum.data$trend2000 <- apply(apply(as.matrix(trend2000), 1, FUN=function(b,Mat){as.vector(exp(Mat%*%b))}, Mat=X), 1, median)
+ag.sum.data$trend2000[ag.sum.data$year<2000] <- NA
+ag.sum.data$Region = factor(ag.sum.data$Region, 
+                            levels=c("W ALEU", "C ALEU", "E ALEU", "W GULF", "C GULF", "E GULF"))
+wdpsfig <- ggplot(ag.sum.data, aes(x=year, y=post.median.abund)) + 
+  geom_line() + 
+  geom_ribbon(aes(ymin=low90.hpd, ymax=hi90.hpd), alpha=0.4) + 
+  geom_line(aes(y=trend2000), color="blue", lwd=1.5) + 
+  geom_pointrange(aes(y=post.median.abundREL, ymin=low90.hpdREL, ymax=hi90.hpdREL)) + 
+  facet_wrap(~Region, ncol=2) +
+  xlab("\nYear") + ylab("Aggregated count\n")
+ggsave("wdpstrends_rw1.pdf", wdpsfig)
 
 # Examine a couple of specific sites
 site.pred <- fit$mcmc.sample$pred.site.abund
@@ -118,7 +133,7 @@ glacier.plot <- ggplot() +
   geom_ribbon(aes(ymin=lower, ymax=upper, x=c(1990:2012)), data=data.frame(HPDinterval(glacier.pred, 0.5)), alpha=0.25) +
   geom_point(aes(y=count, x=year), data=glacier.dat, size=3) +
   xlab("Year") + ylab("Abundance")
-ggsave("glacierPred.pdf", glacier.plot)
+ggsave("glacierPred_rw1.pdf", glacier.plot)
 
 # Zero inflation process for GLACIER
 glacierZI <- mcmc(fit$mcmc.sample$prob.zero.infl[,yr.site$site[yr.site$zero.infl!="none"]=="GLACIER"])
@@ -128,7 +143,7 @@ glacier.plot <- ggplot() +
   geom_ribbon(aes(ymin=lower, ymax=upper, x=c(1990:2012)), data=data.frame(HPDinterval(glacierZI, 0.5)), alpha=0.25) +
   geom_point(aes(y=1.0*c(glacier.dat$count>0), x=year), data=glacier.dat, size=3) +
   xlab("Year") + ylab("Probability survey count > 0")
-ggsave("glacierZI.pdf", glacier.plot)
+ggsave("glacierZI_rw1.pdf", glacier.plot)
 
 # MARMOT in the C ALEU
 marmot.pred <- mcmc(site.pred[,yr.site$site=="MARMOT"])
@@ -139,7 +154,7 @@ marmot.plot <- ggplot() +
   geom_ribbon(aes(ymin=lower, ymax=upper, x=c(1990:2012)), data=data.frame(HPDinterval(marmot.pred, 0.5)), alpha=0.25) +
   geom_point(aes(y=count, x=year), data=marmot.dat, size=3) +
   xlab("Year") + ylab("Abundance")
-ggsave("marmotPred.pdf", marmot.plot)
+ggsave("marmotPred_rw1.pdf", marmot.plot)
 
 # Save the results-- uncomment to save
 save(fit, file="wdpsNonpupsDemoResults_rw1.rda", compress=TRUE)

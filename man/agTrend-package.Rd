@@ -22,7 +22,7 @@
 }
 \details{
   \tabular{ll}{ Package: \tab agTrend\cr Type: \tab
-  Package\cr Version: \tab 0.13\cr Date: \tab 2013-06-04\cr
+  Package\cr Version: \tab 0.14\cr Date: \tab 2013-08-06\cr
   License: \tab Unlimited\cr LazyLoad: \tab yes\cr }
 }
 \author{
