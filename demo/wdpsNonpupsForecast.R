@@ -60,10 +60,10 @@ prior.list <- list(
   )
 )
 
-### Create upper bounds for predictive counts (= 3 x max(count) = 1.2^6)
-upper=Inf
-# upper <- aggregate(wdpsNonpups$count, list(wdpsNonpups$site), function(x){(1.05^50)*max(x)})
-# colnames(upper) <- c("site", "upper")
+### Create upper bounds for predictive counts
+# upper=Inf
+upper <- aggregate(wdpsNonpups$count, list(wdpsNonpups$site), function(x){(1.05^50)*max(x)})
+colnames(upper) <- c("site", "upper")
 
 ### Perform site augmentation and obtain posterior predictive distribution
 set.seed(123) 
