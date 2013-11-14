@@ -9,7 +9,7 @@
 #' allows incorporation of both parameter uncertainty as well as uncertainty due to sampling the local abundance processes.
 #' 
 #' \tabular{ll}{ Package: \tab agTrend\cr Type: \tab Package\cr Version: \tab
-#' 0.14\cr Date: \tab 2013-08-06\cr License: \tab Unlimited\cr LazyLoad: \tab
+#' 0.15\cr Date: \tab 2013-11-14\cr License: \tab Unlimited\cr LazyLoad: \tab
 #' yes\cr }
 #' 
 #' @name agTrend-package
@@ -173,13 +173,15 @@ NULL
     date <- info$Date
     packageStartupMessage(
       paste("\n\n",paste(package, version, paste("(",date, ")", sep=""), "\n\n"), 
-            "Type 'demo(package='agTrend')' to see a list of demos for this package.\n",
-            "BE CAREFUL! The demos take a while as they are running a full MCMC sampler.\n\n",
+            "Type 'demo(package='agTrend')' to see a list of demos for this package.\n\n",
             "The raw code for the demos can be found by typing:\n",
             "\t system.file('demo', package='agTrend')\n\n",
             "To access the help files type:\n",
-            "\t help('agTrend-package')\n\n")
+            "\t help('agTrend-package')\n\n",
+            "Note: agTrend uses the 'Matrix' package for linear algebra operations.\n",
+            "Users may see sereral 'Note:' messages at the onset of the MCMC,\n",
+            "This is normal and will only happen on the first analysis of an R session.\n\n"
+            )
     )
-    
   }
 

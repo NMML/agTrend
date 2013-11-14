@@ -1,4 +1,3 @@
-library(agTrend)
 data(wdpsNonpups)
 data(photoCorrection)
 
@@ -61,16 +60,17 @@ prior.list <- list(
 )
 
 ### Create upper bounds for predictive counts (= 3 x max(count) = 1.2^6)
-upper=Inf
-# upper <- aggregate(wdpsNonpups$count, list(wdpsNonpups$site), function(x){(1.05^50)*max(x)})
-# colnames(upper) <- c("site", "upper")
+upper <- aggregate(wdpsNonpups$count, list(wdpsNonpups$site), function(x){(1.05^50)*max(x)})
+colnames(upper) <- c("site", "upper")
 
 ### Perform site augmentation and obtain posterior predictive distribution
+### Note: Only a small number of MCMC iterations are shown here. For a more robust 
+### analysis change to burn=1000 and iter=5000.
 set.seed(123) 
 fit <- mcmc.aggregate(start=1990, end=2112, data=wdpsNonpups, obs.formula=~obl-1, model.data=wdpsModels, 
                       rw.order=list(eta=1), aggregation="Region",
                       abund.name="count", time.name="year", site.name="site", forecast=TRUE,
-                      burn=1000, iter=5000, thin=5, prior.list=prior.list, upper=upper, 
+                      burn=10, iter=50, thin=5, prior.list=prior.list, upper=upper, 
                       keep.site.param=TRUE, keep.site.abund=TRUE, keep.obs.param=TRUE)
 
 
@@ -93,7 +93,8 @@ ggfig <- ggplot(ag.sum.data, aes(x=year, y=post.median.abund)) +
   geom_pointrange(aes(y=post.median.abundREL, ymin=low90.hpdREL, ymax=hi90.hpdREL)) + 
   facet_wrap(~ Region, ncol=3) + coord_cartesian(ylim=c(0,10000), xlim=c(1990,2050)) +
   xlab("\nYear") + ylab("Forecast count\n") + ggtitle("wDPS Region\n")
-ggsave("wdpstrendsForecast_rw1.pdf", ggfig)
+suppressWarnings(print(ggfig))
+# ggsave("wdpstrendsForecast_rw1.pdf", ggfig)
 
 pe <- data.frame(Region=c("W ALEU", "C ALEU", "E ALEU", "W GULF", "C GULF", "E GULF", "Total"),
                  rookeries = c(4, 12, 7, 5, 6, 3, 37),
@@ -123,8 +124,10 @@ for(i in 24:123){
 }
 cpe.fig <- ggplot(cpe.w.aleu, aes(x=year, y=cpe)) + geom_line(lwd=3) +
   xlab("\nYear") + ylab("Cumulative prob. of quasi-extinction\n") + ggtitle("W ALEU Region\n")
-ggsave("WALEUcpe_rw1.pdf", cpe.fig)
-write.csv(cpe.w.aleu, "WALEUcpeResults_rw1.csv", row.names=FALSE)
+print(cpe.fig)
+# Uncomment to save figure and results data:
+# ggsave("WALEUcpe_rw1.pdf", cpe.fig)
+# write.csv(cpe.w.aleu, "WALEUcpeResults_rw1.csv", row.names=FALSE)
 
 # look at WDPS as a whole
 new.agg.data <- data.frame(site=levels(fit$original.data$site))
@@ -132,19 +135,22 @@ new.agg.data$total <- "Total"
 new.agg.list.pred <- newAggregation(fit, new.agg.data, "pred")
 total.mcmc <- new.agg.list.pred[[1]]$mcmc.sample
 ag.sum.data <- new.agg.list.pred[[1]]$aggregation.pred.summary
-ggfig <- ggplot(ag.sum.data, aes(x=year, y=post.median.abund)) + 
+ggfig2 <- ggplot(ag.sum.data, aes(x=year, y=post.median.abund)) + 
   geom_line() + 
   geom_ribbon(aes(ymin=low90.hpd, ymax=hi90.hpd), alpha=0.4) + 
   xlab("\nYear") + ylab("Forecast count\n") + ggtitle("wDPS Total\n")
-ggsave("wdpstrendsForecast_rw1_total.pdf", ggfig)
+print(ggfig2)
+# Uncomment to save figure:
+# ggsave("wdpstrendsForecast_rw1_total.pdf", ggfig2)
 
 Xmat <- total.mcmc$aggregated.pred.abund
 pe$Extinction.Prob.20[7] <- mean(apply(Xmat, 1, extinct, val=pe$pe.cnt[7], year=43))
 pe$Extinction.Prob.50[7] <- mean(apply(Xmat, 1, extinct, val=pe$pe.cnt[7], year=73))
 pe$Extinction.Prob.100[7] <- mean(apply(Xmat, 1, extinct, val=pe$pe.cnt[7], year=123))
+print(pe)
 
-# Save the results-- uncomment to save
-write.csv(pe, file="wdpsPEresults_rw1.csv", row.names=FALSE)
-save(fit, pe, new.agg.list.pred, file="wdpsNonpupsForecastDemoResults_rw1.rda", compress=TRUE)
+### Save the results-- uncomment to save
+# write.csv(pe, file="wdpsPEresults_rw1.csv", row.names=FALSE)
+# save(fit, pe, new.agg.list.pred, file="wdpsNonpupsForecastDemoResults_rw1.rda", compress=TRUE)
 
 

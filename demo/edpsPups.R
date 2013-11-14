@@ -28,12 +28,13 @@ prior.list <- list(
 upper <- aggregate(edpsPups$abund, list(edpsPups$region), function(x){3*max(x)})
 colnames(upper) <- c("region", "upper")
 
-
-# Fit the site models and estimate aggregated trend summary
+### Perform site augmentation and obtain posterior predictive distribution
+### Note: Only a small number of MCMC iterations are shown here. For a more robust 
+### analysis change to burn=1000 and iter=5000.
 set.seed(123)
 fit <- mcmc.aggregate(start=1979, end=2010, data=edpsPups, model.data=edpsModels, rw.order=list(eta=2),
                       abund.name="abund", time.name="year", site.name="region", 
-                      burn=1000, iter=5000, thin=5, prior.list=prior.list, upper=upper, 
+                      burn=10, iter=50, thin=5, prior.list=prior.list, upper=upper, 
                       keep.site.param=TRUE, keep.site.abund=TRUE, keep.obs.param=TRUE)
 
 # Extract MCMC summaries
@@ -50,16 +51,21 @@ plt <- ggplot(aes(x=year, y=abund, color=region), data=fitdat) +
   geom_line(aes(y=post.median.abund)) +
   geom_ribbon(aes(ymin=low90.hpd, ymax=hi90.hpd, fill=region), alpha=0.25) +
   xlab("\nYear") + ylab("Estimated SSL abundance (4.5 x pup count)\n") + ggtitle("eDPS 30 Year Trend\n")
-ggsave("edpsTotalTrend.pdf", plt)
+suppressWarnings(print(plt))
+# Uncomment to save figure:
+# ggsave("edpsTotalTrend.pdf", plt)
 
 # Examine individual site trends
 summary(fit$mcmc.sample$site.param$beta)
 
 # Estimate posterior predictive mode and HPD credible interval growth rate (percentage form) for EDPS stock
-dd <- density(exp(fit$mcmc.sample$pred.trend[,2])-1)
-dd$x[dd$y==max(dd$y)]
-HPDinterval(exp(fit$mcmc.sample$pred.trend[,2])-1, 0.95)
+trend.mcmc = exp(fit$mcmc.sample$pred.trend[,2])-1
+dd <- density(trend.mcmc)
+trend.mode = dd$x[dd$y==max(dd$y)]
+trend.HPD = HPDinterval(trend.mcmc, 0.95)
+cat(paste("\nTrend estimate:", round(trend.mode,3), 
+          "(", round(trend.HPD[,1],3),",",round(trend.HPD[,2],3),")","\n"))
 
 # Save the results-- uncomment to save
-save(fit, file="edpsPupsDemoResults.rda", compress=TRUE)
+# save(fit, file="edpsPupsDemoResults.rda", compress=TRUE)
 

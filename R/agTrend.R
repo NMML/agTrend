@@ -16,7 +16,7 @@
 #' 
 #' @references H. Rue and L. Held (2005) Gaussian Markov Random Fields. Chapman & Hall/CRC. 263 pp.
 #' @export
-#' 
+#' @import mgcv
 iar.Q <- function(n,p)
 {
   if(n<2*p) stop("n must be >= 2*p\n")
@@ -40,7 +40,7 @@ iar.Q <- function(n,p)
 
 getSiteREInits <- function(data, abund.name, site.name, time.name, ln.adj, 
                            Q0.eta.s, r0.eta.s, a.tau, b.tau, newdata, model.data){
-  require(mgcv)
+  #require(mgcv)
   data$y <- log(data[,abund.name]+ln.adj)
   eta <- NULL
   tau <- NULL
@@ -75,7 +75,7 @@ getSiteREInits <- function(data, abund.name, site.name, time.name, ln.adj,
 
 getSiteZIInits <- function(data.orig, abund.name, site.name, time.name,
                            Q0.alpha.s, r0.alpha.s, a.phi, b.phi, newdata, model.data){
-  require(mgcv)
+  #require(mgcv)
   data.orig$y <- 1.0*(data.orig[,abund.name]>0)
   alpha <- NULL
   phi <- NULL
@@ -188,6 +188,7 @@ getSiteZIInits <- function(data.orig, abund.name, site.name, time.name,
 #' @export
 #' @import Matrix
 #' @import coda
+#' @import truncnorm
 #' 
 mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, model.data, rw.order=NULL,
                            abund.name, time.name, site.name, sig.abund, forecast=FALSE, 
@@ -195,10 +196,10 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
                            burn, iter, thin=1, prior.list=NULL, 
                            keep.site.abund=FALSE, keep.site.param=FALSE, keep.obs.param=FALSE
                            ){
-  require(Matrix)
-  require(coda)
+  #require(Matrix)
+  #require(coda)
   use.trunc <- !is.null(model.data$zero.infl) | (any(upper!=Inf) | any(lower!=-Inf))
-  if(use.trunc) require(truncnorm)
+  #if(use.trunc) require(truncnorm)
   use.zi <- !is.null(model.data$zero.infl)
   if(use.zi) use.zi <- any(model.data$zero.infl!="none")
   if(use.zi) use.alpha <- any(model.data$zero.infl=="RW")
@@ -226,8 +227,9 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   # DATA MANIPULATION / PREPARATION ###
   if(use.zi) ln.adj <- 0
   d.start <-  min(data[,time.name])
-  if(!forecast) d.end <- max(data[,time.name])
-  else d.end <- max(max(data[,time.name]), end)
+  if(!forecast){
+    d.end <- max(data[,time.name])
+  } else {d.end <- max(max(data[,time.name]), end)}
   d.yrs <- c(d.start:d.end)
   if(missing(start)) start <- d.start
   if(missing(end)) end <- d.end
@@ -283,8 +285,9 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   M <- Diagonal(bigN)[obs.idx,]
   y <- log(data[,abund.name] + ln.adj)
   # create design matrix for gamma
-  if(use.gam) Xy <- Matrix(model.matrix(obs.formula, data=data))
-  else Xy <- NULL
+  if(use.gam){
+    Xy <- Matrix(model.matrix(obs.formula, data=data))
+  } else{Xy <- NULL}
   # create design matrix for beta
   Xz <- .bdiag(lapply(model.data$trend, 
                    function(x){
@@ -292,8 +295,9 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
                       else return(cbind(rep(1,n.year),d.yrs))                         
                      }))
   # create constraint matrix for eta
-  if(!is.null(rw.order$eta)) eta.order=rw.order$eta
-  else eta.order=1
+  if(!is.null(rw.order$eta)){
+    eta.order=rw.order$eta
+  } else{eta.order=1}
   if(use.eta){
     if(eta.order==2){
     Xz.rw <- .bdiag(lapply(model.data$trend[model.data$trend=="RW"], 
@@ -301,8 +305,7 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
                               if(x=="const"){return(matrix(rep(1,n.year), ncol=1))}
                               else return(cbind(rep(1,n.year),d.yrs))                         
                             }))
-    }
-    else{
+    } else{
       Xz.rw <- .bdiag(lapply(model.data$trend[model.data$trend=="RW"], 
                              function(x){
                                if(x=="const"){return(matrix(rep(1,n.year), ncol=1))}
@@ -312,8 +315,9 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
     A <- solve(crossprod(Xz.rw), t(Xz.rw))
   }
   # create design matrix for q fixed-only sites
-  if(!is.null(rw.order$alpha)) alpha.order=rw.order$alpha
-  else alpha.order=1
+  if(!is.null(rw.order$alpha)){
+    alpha.order=rw.order$alpha
+  } else{alpha.order=1}
   if(use.zi){
     Xq <- .bdiag(lapply(model.data$zero.infl[model.data$zero.infl!="none"], 
                             function(x){
@@ -322,8 +326,9 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
                             }))
   }
   # Precision for epsilon
-  if(!missing(sig.abund)) Qeps <- Diagonal(1/data[,sig.abund]^2)
-  else Qeps <- Diagonal(x=rep(1.0E8, length(y)))
+  if(!missing(sig.abund)) {
+    Qeps <- Diagonal(1/data[,sig.abund]^2)
+  } else {Qeps <- Diagonal(x=rep(1.0E8, length(y)))}
   # Precision for eta and alpha
   Q0.eta.s <- Matrix(iar.Q(n.year, eta.order))
   Q0.alpha.s <- Matrix(iar.Q(n.year, alpha.order))
@@ -336,10 +341,9 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   #gamma
   if(use.gam){
     if(is.null(prior.list$gamma)){
-       Qg <- matrix(0,ncol(Xy))
+      Qg <- matrix(0,ncol(Xy))
       g0 <- rep(0,ncol(Xy))
-    }
-    else{
+    } else{
       Qg <- prior.list$gamma$Q.gamma
       g0 <- prior.list$gamma$gamma.0
     }
@@ -348,8 +352,7 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   if(is.null(prior.list$beta)){
     Qb <- matrix(0,ncol(Xz), ncol(Xz))
     b0 <- rep(0,ncol(Xz))
-  }
-  else{
+  } else{
     Qb <- prior.list$beta$Q.beta
     b0 <- prior.list$beta$beta.0
   }
@@ -357,8 +360,7 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   if(is.null(prior.list$tau)){
     a.tau <- 0.5
     b.tau <- 5.0E-5
-  }
-  else{
+  } else{
     a.tau <- prior.list$tau$a.tau
     b.tau <- prior.list$tau$b.tau
   }
@@ -366,8 +368,7 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   if(is.null(prior.list$xi)){
     a.xi <- 0.5
     b.xi <- 5.0E-5
-  }
-  else{
+  } else{
     a.xi <- prior.list$xi$a.xi
     b.xi <- prior.list$xi$b.xi
   }
@@ -376,8 +377,7 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
     if(is.null(prior.list$phi)){
       a.phi <- 0.5
       b.phi <- 5.0E-5
-    }
-    else{
+    } else{
       a.phi <- prior.list$phi$a.phi
       b.phi <- prior.list$phi$b.phi
     }
@@ -387,8 +387,7 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
     if(is.null(prior.list$theta)){
       Qt <- matrix(0,ncol(Xq), ncol(Xq))
       t0 <- rep(0,ncol(Xq))
-    }
-    else{
+    } else{
       Qt <- prior.list$beta$Q.theta
       t0 <- prior.list$beta$theta.0
     }
@@ -405,8 +404,7 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
     D.g.inv <- solve(D.g)
     cholD.g.inv <- t(chol(D.g.inv))
     XyQepsy.Qgg0 <- crossprod(Xy, Qeps) %*% y + Qg %*% g0
-  }
-  else Xyg <- 0
+  } else Xyg <- 0
   #Call init making functions
   newdata <- data.frame(d.yrs)
   colnames(newdata) <- time.name
@@ -512,8 +510,11 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
     #update z
     D.z <- MQepsM + Qdelta
     d.z<- MQeps%*%(y-Xyg) + Qdelta%*%(muz + eta)
-    if(!use.trunc) z <- as.vector(solve(D.z, d.z) + solve(chol(D.z), rnorm(bigN,0,1)))
-    else z <- rtruncnorm(bigN, a=lower, b=upper, mean=as.vector(solve(D.z,d.z)), sd=1/sqrt(diag(D.z)))
+    if(!use.trunc){
+      z <- as.vector(solve(D.z, d.z) + solve(chol(D.z), rnorm(bigN,0,1)))
+    } else {
+      z <- rtruncnorm(bigN, a=lower, b=upper, mean=as.vector(solve(D.z,d.z)), sd=1/sqrt(diag(D.z)))
+    }
     
     #update alpha, phi, and z.01.tilde
     if(use.zi){
@@ -702,7 +703,7 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
 #' @export
 #'  
 updateTrend <- function(x, start, end, type="pred", order="lin"){
-  require(coda)
+  #require(coda)
   if(type=="pred" | is.null(x$mcmc.sample$aggregated.rel.abund)) smp <- x$mcmc.sample$aggregated.pred.abund
   else if(type=="rel") smp <- x$mcmc.sample$aggregated.rel.abund
   else stop("Unknown 'type', must be 'pred' or 'rel'.\n")
@@ -719,14 +720,16 @@ updateTrend <- function(x, start, end, type="pred", order="lin"){
   yrs <- c(start:end)
   ag.df <- expand.grid(yrs, levels(agg))
   if(order=="lin"){
-    if(length(nms.agg)>1) ag.mm <- model.matrix(~(ag.df[,2]+0) + (ag.df[,1]:ag.df[,2]+0))
-    else ag.mm <- cbind(rep(1,nrow(ag.df)), yrs)
+    if(length(nms.agg)>1) {
+      ag.mm <- model.matrix(~(ag.df[,2]+0) + (ag.df[,1]:ag.df[,2]+0))
+    } else {
+      ag.mm <- cbind(rep(1,nrow(ag.df)), yrs)
+    }
     H <- solve(crossprod(ag.mm))%*%t(ag.mm)
     y <- log(smp[,time.idx] + attr(x, "ln.adj"))
     tsmp <- t(apply(y, 1, function(y){H%*%y}))
     colnames(tsmp) <- c(paste(nms.agg, "(Intercept)"), paste(nms.agg, "(Trend)"))
-  }
-  else if(order=="const"){
+  } else if(order=="const"){
     if(length(nms.agg)>1) ag.mm <- model.matrix(~(ag.df[,2]+0))
     else ag.mm <- matrix(rep(1,nrow(ag.df)), ncol=1)
     H <- solve(crossprod(ag.mm))%*%t(ag.mm)
@@ -762,7 +765,7 @@ updateTrend <- function(x, start, end, type="pred", order="lin"){
 #' @export
 #'  
 newAggregation <- function(fit, aggregation.data, type="pred"){
-  require(coda)
+  #require(coda)
   if(type == "pred") xxx <- fit$mcmc.sample$pred.site.abund
   if(type == "rel") xxx <- fit$mcmc.sample$rel.site.abund
   if(is.null(xxx)) stop("Site abundance data was not retained in the call to 'mcmc.aggreation()'\n Please re-run with 'keep.site.abund=TRUE'\n")
@@ -786,8 +789,11 @@ newAggregation <- function(fit, aggregation.data, type="pred"){
       hpd <- HPDinterval(a1, 0.9)
       ag.summary$low90.hpd <- hpd[,1]
       ag.summary$hi90.hpd <- hpd[,2]
-      if(type=="pred") outlist[[i]] <- list(mcmc.sample=list(aggregated.pred.abund=a1), aggregation.pred.summary=ag.summary)
-      else  outlist[[i]] <- list(mcmc.sample=list(aggregated.rel.abund=a1), aggregation.rel.summary=ag.summary)
+      if(type=="pred") {
+        outlist[[i]] <- list(mcmc.sample=list(aggregated.pred.abund=a1), aggregation.pred.summary=ag.summary)
+      } else  {
+        outlist[[i]] <- list(mcmc.sample=list(aggregated.rel.abund=a1), aggregation.rel.summary=ag.summary)
+      }
       attr(outlist[[i]], "ln.adj") <- attr(fit, "ln.adj")
     }  
   return(outlist)

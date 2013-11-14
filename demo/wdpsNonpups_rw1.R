@@ -64,11 +64,13 @@ upper <- aggregate(wdpsNonpups$count, list(wdpsNonpups$site), function(x){3*max(
 colnames(upper) <- c("site", "upper")
 
 ### Perform site augmentation and obtain posterior predictive distribution
+### Note: Only a small number of MCMC iterations are shown here. For a more robust 
+### analysis change to burn=1000 and iter=5000.
 set.seed(123) 
 fit <- mcmc.aggregate(start=1990, end=2012, data=wdpsNonpups, obs.formula=~obl-1, model.data=wdpsModels, 
                       rw.order=list(eta=1), aggregation="Region",
                       abund.name="count", time.name="year", site.name="site", 
-                      burn=1000, iter=5000, thin=5, prior.list=prior.list, upper=upper, 
+                      burn=10, iter=50, thin=5, prior.list=prior.list, upper=upper, 
                       keep.site.param=TRUE, keep.site.abund=TRUE, keep.obs.param=TRUE)
 
 
@@ -80,10 +82,12 @@ trend2000 <- updateTrend(fit, 2000, 2012, "pred")
 growth2000 <- mcmc(100*(exp(trend2000[,7:12])-1))
 summary(growth2000)
 # Obtain posterior median % growth and 90% credible interval
-data.frame(
-  post.median=round(apply(growth2000, 2, median),2),
-  HPD.90=round(HPDinterval(growth2000, 0.90),2)
+print(
+  data.frame(
+    post.median=round(apply(growth2000, 2, median),2),
+    HPD.90=round(HPDinterval(growth2000, 0.90),2)
   )
+)
 
 # Add fitted 2000-2012 trend to aggregation summary
 b <- apply(trend2000, 2, median)
@@ -91,7 +95,7 @@ X <- model.matrix(~(Region-1) + (Region-1):(year), data=fitdat)
 fitdat$trend2000 <- apply(
   apply(as.matrix(trend2000), 1, FUN=function(b,Mat){as.vector(exp(Mat%*%b))}, Mat=X), 
   1, median
-  )
+)
 fitdat$trend2000[fitdat$year<2000] <- NA
 
 # Make a plot of the results (requires ggplot2 package)
@@ -112,12 +116,11 @@ ag.sum.data$Region = factor(ag.sum.data$Region,
                             levels=c("W ALEU", "C ALEU", "E ALEU", "W GULF", "C GULF", "E GULF"))
 wdpsfig <- ggplot(ag.sum.data, aes(x=year, y=post.median.abund)) + 
   geom_line() + 
-  geom_ribbon(aes(ymin=low90.hpd, ymax=hi90.hpd), alpha=0.4) + 
-  geom_line(aes(y=trend2000), color="blue", lwd=1.5) + 
-  geom_pointrange(aes(y=post.median.abundREL, ymin=low90.hpdREL, ymax=hi90.hpdREL)) + 
+  geom_ribbon(aes(ymin=low90.hpd, ymax=hi90.hpd), alpha=0.4, na.rm=TRUE) + 
+  geom_line(aes(y=trend2000), color="blue", lwd=1.5, na.rm=TRUE) + 
+  geom_pointrange(aes(y=post.median.abundREL, ymin=low90.hpdREL, ymax=hi90.hpdREL), na.rm=TRUE) + 
   facet_wrap(~Region, ncol=2) +
   xlab("\nYear") + ylab("Aggregated count\n")
-ggsave("wdpstrends_rw1.pdf", wdpsfig)
 
 # Examine a couple of specific sites
 site.pred <- fit$mcmc.sample$pred.site.abund
@@ -133,17 +136,15 @@ glacier.plot <- ggplot() +
   geom_ribbon(aes(ymin=lower, ymax=upper, x=c(1990:2012)), data=data.frame(HPDinterval(glacier.pred, 0.5)), alpha=0.25) +
   geom_point(aes(y=count, x=year), data=glacier.dat, size=3) +
   xlab("Year") + ylab("Abundance")
-ggsave("glacierPred_rw1.pdf", glacier.plot)
 
 # Zero inflation process for GLACIER
 glacierZI <- mcmc(fit$mcmc.sample$prob.zero.infl[,yr.site$site[yr.site$zero.infl!="none"]=="GLACIER"])
-glacier.plot <- ggplot() + 
+glacier.zi <- ggplot() + 
   geom_line(aes(x=c(1990:2012), y=apply(glacierZI, 2, median))) +
   geom_ribbon(aes(ymin=lower, ymax=upper, x=c(1990:2012)), data=data.frame(HPDinterval(glacierZI)), alpha=0.25) +
   geom_ribbon(aes(ymin=lower, ymax=upper, x=c(1990:2012)), data=data.frame(HPDinterval(glacierZI, 0.5)), alpha=0.25) +
   geom_point(aes(y=1.0*c(glacier.dat$count>0), x=year), data=glacier.dat, size=3) +
   xlab("Year") + ylab("Probability survey count > 0")
-ggsave("glacierZI_rw1.pdf", glacier.plot)
 
 # MARMOT in the C ALEU
 marmot.pred <- mcmc(site.pred[,yr.site$site=="MARMOT"])
@@ -154,7 +155,16 @@ marmot.plot <- ggplot() +
   geom_ribbon(aes(ymin=lower, ymax=upper, x=c(1990:2012)), data=data.frame(HPDinterval(marmot.pred, 0.5)), alpha=0.25) +
   geom_point(aes(y=count, x=year), data=marmot.dat, size=3) +
   xlab("Year") + ylab("Abundance")
-ggsave("marmotPred_rw1.pdf", marmot.plot)
+
+# Print the figs-- uncomment 'ggsave' lines to create PDFs
+suppressWarnings(print(wdpsfig)) # ggplot2 printing throws warnings for the NAs in the plots
+print(glacier.plot)
+print(glacier.zi)
+print(marmot.plot)
+# ggsave("wdpstrends_rw1.pdf", wdpsfig)
+# ggsave("glacierPred_rw1.pdf", glacier.plot)
+# ggsave("glacierZI_rw1.pdf", glacier.zi)
+# ggsave("marmotPred_rw1.pdf", marmot.plot)
 
 # Save the results-- uncomment to save
-save(fit, file="wdpsNonpupsDemoResults_rw1.rda", compress=TRUE)
+## save(fit, file="wdpsNonpupsDemoResults_rw1.RData", compress=TRUE)
