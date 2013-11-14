@@ -1,37 +1,34 @@
 <!DOCTYPE html>
 <html>
-
   <head>
-    <meta charset='utf-8' />
-    <meta http-equiv="X-UA-Compatible" content="chrome=1" />
-    <meta name="description" content="agTrend : R package for Bayesian inference of aggregated abundance survey trends" />
+    <meta charset='utf-8'>
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link href='https://fonts.googleapis.com/css?family=Architects+Daughter' rel='stylesheet' type='text/css'>
+    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen" />
+    <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen" />
+    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print" />
 
-    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
 
-    <title>agTrend</title>
+    <title>agTrend by NMML</title>
   </head>
 
   <body>
+    <header>
+      <div class="inner">
+        <h1>agTrend</h1>
+        <h2>R package for Bayesian inference of aggregated abundance survey trends</h2>
+        <a href="https://github.com/NMML/agTrend" class="button"><small>View project on</small>GitHub</a>
+      </div>
+    </header>
 
-    <!-- HEADER -->
-    <div id="header_wrap" class="outer">
-        <header class="inner">
-          <a id="forkme_banner" href="https://github.com/NMML/agTrend">View on GitHub</a>
-
-          <h1 id="project_title">agTrend</h1>
-          <h2 id="project_tagline">R package for Bayesian inference of aggregated abundance survey trends</h2>
-
-            <section id="downloads">
-              <a class="zip_download_link" href="https://github.com/NMML/agTrend/zipball/master">Download this project as a .zip file</a>
-              <a class="tar_download_link" href="https://github.com/NMML/agTrend/tarball/master">Download this project as a tar.gz file</a>
-            </section>
-        </header>
-    </div>
-
-    <!-- MAIN CONTENT -->
-    <div id="main_content_wrap" class="outer">
-      <section id="main_content" class="inner">
-        <h1>
+    <div id="content-wrapper">
+      <div class="inner clearfix">
+        <section id="main-content">
+          <h1>
 <a name="welcome-to-agtrend" class="anchor" href="#welcome-to-agtrend"><span class="octicon octicon-link"></span></a>Welcome to agTrend</h1>
 
 <p>This is the future home of the R package <em>agTrend</em> for Bayesian inference of trends for aggregated survey data</p>
@@ -69,7 +66,7 @@
 
 <p>Source files for each version can be obtained <a href="https://drive.google.com/folderview?id=0B7NE3XGvDquORXpfb05xMWw2SHc&amp;usp=sharing">here</a>. The desired file can be downloaded and installed in the same way as with the binaries, e.g., </p>
 
-<pre><code>&gt; install.packages("agTrend_0.13.tar.gz", repos=NULL, type="source")
+<pre><code>&gt; install.packages("agTrend_0.15.tar.gz", repos=NULL, type="source")
 </code></pre>
 
 <h3>
@@ -103,18 +100,18 @@
 
 <p>Following this you should see this output:</p>
 
-<pre><code>Loading required package: coda
+<pre><code>oading required package: coda
 Loading required package: lattice
 Loading required package: Matrix
 Loading required package: mgcv
-This is mgcv 1.7-22. For overview type 'help("mgcv-package")'.
+Loading required package: nlme
+This is mgcv 1.7-26. For overview type 'help("mgcv-package")'.
 Loading required package: truncnorm
 
 
- agTrend 0.13 (2013-06-04) 
+ agTrend 0.15 (2013-11-14) 
 
  Type 'demo(package='agTrend')' to see a list of demos for this package.
- BE CAREFUL! The demos take a while as they are running a full MCMC sampler.
 
  The raw code for the demos can be found by typing:
      system.file('demo', package='agTrend')
@@ -122,23 +119,42 @@ Loading required package: truncnorm
  To access the help files type:
      help('agTrend-package')
 
+ Note: agTrend uses the 'Matrix' package for linear algebra operations.
+ Users may see sereral 'Note:' messages at the onset of the MCMC,
+ This is normal and will only happen on the first analysis of an R session.
+
 
 &gt; 
 </code></pre>
 
-<p>It will throw some errors if the required packages are not installed. Just install these separately using, e.g.,  <code>install.packages("coda")</code>. From here you can run the demos on Steller sea lion trends with, e.g., <code>demo(wdpsNonpups)</code>. This will take a while because it will run the entire MCMC augmentation!</p>
-      </section>
+<p>It will throw some errors if the required packages are not installed. Just install these separately using, e.g.,  <code>install.packages("coda")</code>. From here you can run the demos on Steller sea lion trends with, e.g., <code>demo(wdpsNonpups)</code>. </p>
+
+<p><em>Users should note that <code>agTrend</code> uses the <code>Matrix</code> package for linear algebra operations on sparse matrices. The <code>Matrix</code> package produces several notes on the first call to these methods. This is OK and will only happen the first time an augmentation analysis is run.</em></p>
+
+<p><em>e.g., this note is expected:</em></p>
+
+<p><em><code>Note: method with signature ‘diagonalMatrix#Matrix’ chosen for function ‘kronecker’,
+ target signature ‘ddiMatrix#dsCMatrix’.
+ "ANY#sparseMatrix" would also be valid</code></em></p>
+        </section>
+
+        <aside id="sidebar">
+          <a href="https://github.com/NMML/agTrend/zipball/master" class="button">
+            <small>Download</small>
+            .zip file
+          </a>
+          <a href="https://github.com/NMML/agTrend/tarball/master" class="button">
+            <small>Download</small>
+            .tar.gz file
+          </a>
+
+          <p class="repo-owner"><a href="https://github.com/NMML/agTrend"></a> is maintained by <a href="https://github.com/NMML">NMML</a>.</p>
+
+          <p>This page was generated by <a href="pages.github.com">GitHub Pages</a> using the Architect theme by <a href="https://twitter.com/jasonlong">Jason Long</a>.</p>
+        </aside>
+      </div>
     </div>
 
-    <!-- FOOTER  -->
-    <div id="footer_wrap" class="outer">
-      <footer class="inner">
-        <p class="copyright">agTrend maintained by <a href="https://github.com/NMML">NMML</a></p>
-        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
-      </footer>
-    </div>
-
-    
-
+  
   </body>
 </html>
