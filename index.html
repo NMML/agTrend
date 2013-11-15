@@ -52,19 +52,19 @@
 <h3>
 <a name="downloading-a-binary-file" class="anchor" href="#downloading-a-binary-file"><span class="octicon octicon-link"></span></a>Downloading a binary file</h3>
 
-<p>I have also placed copies of the latest <a href="https://drive.google.com/folderview?id=0B7NE3XGvDquOQ0tRa0xiYmtQN2c&amp;usp=sharing">binary installation</a> files in a Google drive. For Windows download the ".zip" file and for Mac OS X download the ".tgz" file. If you are running a Linux machine, see the following section. <em>Note</em>: make sure your browser does not try to automatically unpack the file (this is the default for Safari, go into preferences to change this feature). </p>
+<p>If you are using a Windows or Mac OSX machine, you can also download prebuilt binary files for installation. The Mac OSX version is available <a href="https://github.com/NMML/agTrend/releases/download/v0.15/agTrend_0.15.tgz">here</a>. The windows version is downloaded <a href="https://github.com/NMML/agTrend/releases/download/v0.15/agTrend_0.15.zip">here</a>. If you are running a Linux machine, see the following section. <em>Note</em>: make sure your browser does not try to automatically unpack the file (this is the default for Safari, go into preferences to change this feature). </p>
 
 <p>After you download the file, open R and set the working directory (e.g., using <code>setwd("path/to/download/dir/")</code>). Once this is set, run</p>
 
-<pre><code>&gt; install.packages("agTrend.zip", repos=NULL)
+<pre><code>&gt; install.packages("agTrend_0.15.zip", repos=NULL)
 </code></pre>
 
-<p>If you have a mac replace with "agTrend.zip" with "agTrend.tgz".</p>
+<p>If you have a mac replace with "agTrend_0.15.zip" with "agTrend_0.15.tgz".</p>
 
 <h3>
 <a name="downloading-the-source-file" class="anchor" href="#downloading-the-source-file"><span class="octicon octicon-link"></span></a>Downloading the source file</h3>
 
-<p>Source files for each version can be obtained <a href="https://drive.google.com/folderview?id=0B7NE3XGvDquORXpfb05xMWw2SHc&amp;usp=sharing">here</a>. The desired file can be downloaded and installed in the same way as with the binaries, e.g., </p>
+<p>Source files for each version can be downloaded <a href="https://github.com/NMML/agTrend/releases/download/v0.15/agTrend_0.15.tar.gz">here</a>. The desired file can be downloaded and installed in the same way as with the binaries, e.g., </p>
 
 <pre><code>&gt; install.packages("agTrend_0.15.tar.gz", repos=NULL, type="source")
 </code></pre>
@@ -131,7 +131,7 @@ Loading required package: truncnorm
 
 <p><em>Users should note that <code>agTrend</code> uses the <code>Matrix</code> package for linear algebra operations on sparse matrices. The <code>Matrix</code> package produces several notes on the first call to these methods. This is OK and will only happen the first time an augmentation analysis is run.</em></p>
 
-<p><em>e.g., this note is expected:</em></p>
+<p><em>e.g., these types of notes are expected:</em></p>
 
 <p><em><code>Note: method with signature ‘diagonalMatrix#Matrix’ chosen for function ‘kronecker’,
  target signature ‘ddiMatrix#dsCMatrix’.
