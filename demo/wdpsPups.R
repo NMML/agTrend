@@ -34,22 +34,10 @@ head(wdpsModels)
 
 
 ### Create prior distribution list for MCMC site updating 
-library(Matrix)
-n.sites <- length(unique(wdpsPups$site))
-prior.list <- list( 
-  # Set Q.beta such that average trend not likely to exceed +/- 20%/year from 1990-2012
-  beta=list(
-    beta.0=rep(0,sum(wdpsModels$trend=="const")+(sum(wdpsModels$trend!="const")*2)), 
-    Q.beta=Matrix(diag(
-      unlist(lapply(wdpsModels$trend, 
-        function(x){
-          if(x!="const") return(c(0,200))
-          else return(c(0))
-        }
-      ))
-    ))
-  )
-)
+### Assumes site trends unlikely to be greater than 20% or less that about -17%
+### or, more exactly Pr{exp(-ln(1+0.2))-1 < trend < 0.2} = 0.95
+
+prior.list=defaultPriorList(trend.limit=0.2, model.data=wdpsModels)
 
 ### Create upper bounds for predictive counts (= 3 x max(count) = 1.2^6)
 upper <- aggregate(wdpsPups$count, list(wdpsPups$site), function(x){3*max(x)})

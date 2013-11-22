@@ -1,3 +1,4 @@
+export(defaultPriorList)
 export(iar.Q)
 export(mcmc.aggregate)
 export(newAggregation)

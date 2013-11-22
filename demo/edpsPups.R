@@ -7,22 +7,7 @@ edpsPups$abund <- edpsPups$count*4.5
 edpsModels <- data.frame(region=levels(edpsPups$region), trend=c("RW","lin","lin","RW"))
 
 # Define priors for regional trend parameters
-library(Matrix)
-n.sites <- length(unique(edpsPups$region))
-prior.list <- list( 
-  # Set Q.beta such that average trend not likely to exceed +/- 20%/year from 1979-2010
-  beta=list(
-    beta.0=rep(0,sum(edpsModels$trend=="const")+(sum(edpsModels$trend!="const")*2)), 
-    Q.beta=Matrix(diag(
-      unlist(lapply(edpsModels$trend, 
-                    function(x){
-                      if(x!="const") return(c(0,200))
-                      else return(c(0))
-                    }
-      ))
-    ))
-  )
-)
+prior.list=defaultPriorList(trend.limit=0.2, model.data=edpsModels)
 
 ### Create upper bounds for predictive counts (= 3 x max(count) = 1.2^6)
 upper <- aggregate(edpsPups$abund, list(edpsPups$region), function(x){3*max(x)})

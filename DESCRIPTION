@@ -1,8 +1,8 @@
 Package: agTrend
 Type: Package
 Title: Estimate linear trends for aggregated abundance data
-Version: 0.15
-Date: 2013-11-14
+Version: 0.16
+Date: 2013-11-22
 Author: Devin S. Johnson
 Maintainer: Devin S. Johnson <devin.johnson@noaa.gov>
 Description: R package for fitting temporal trends to abundance data aggregated

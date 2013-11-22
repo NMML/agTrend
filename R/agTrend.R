@@ -4,6 +4,93 @@
 ### Functions
 ###
 
+#' @title Create list of prior parameters for \code{mcmc.aggregate(...)} trend estimation.
+#' 
+#' @description This function takes user input to create the list of prior paremters necessary for 
+#' Bayesian inference of aggregated trends. The prior parameter list is a necessary argument for 
+#' the \code{\link{mcmc.aggregate}} function.
+#' 
+#' @param trend.limit Bounds on the individual site trends.
+#' @param model.data A data set which provides the individual site models used in \code{\link{mcmc.aggregate}}.
+#' @param gamma.mean Prior mean of the (multivariate) normal prior distribution for gamma
+#' @param gamma.prec Precision (inverse of variance) of the gamma prior distribution
+#' 
+#' @return A named list with entries for each of the parameters for which prior specification is necessary.
+#' 
+#' @details Using the site model data set \code{model.data} and a soft bound on the individual site
+#' trends (\code{trend.limit}) this function creates a sensible default for the list of prior 
+#' parameters necessary for Bayesian inference of aggregated trends. The value of 
+#' \code{trend.limit} should be in terms of % growth (e.g., \code{trend.limit=0.2} implies an upper limit 
+#' of 20 percent growth at each individual site). The lower bound is calculated as 
+#' 1/(1+trend.limit). This is the ower bound that is symmetric about zero on the log-scale.
+#' For \code{trend.limit=0.2}, the lower bound is approximately -0.17. 
+#' 
+#' Specifically, the prior distribution for the linear trend parameters (beta) 
+#' in log abundance at each site is set to a bivariate normal with mean \code{m.i=c(0,0)}
+#' and precision matrix \code{Q.i=diag(c(0,q))}, where \code{q} is chosen such that
+#' Pr[1/(1+trend.limit) < exp(beta[2])-1 < trend.limit] = 0.95.
+#' 
+#' 
+#' @export
+#' @import Matrix
+
+defaultPriorList = function(trend.limit=NULL, model.data, gamma.mean, gamma.prec){
+  if(is.null(trend.limit) & any(c("RW","lin")%in%model.data$trend)) stop("A value must be provided for 'trend.limit' when using 'lin' and 'RW' models!")
+  if(!is.null(trend.limit)) Q.trend = 1/(log(1+trend.limit)/2)^2
+  use.zi = !is.null(model.data$zero.infl)
+  if(!use.zi) use.alpha=FALSE
+  if(use.zi) use.alpha = any(model.data$zero.infl=="RW")
+  if(missing(gamma.mean) & missing(gamma.prec)){
+    gamma=NULL
+  } else {
+    if(missing(gamma.mean)) {
+      gamma.0 = rep(0,sqrt(length(gamma.prec)))
+      gamma=list(gamma.0=gamma.0, Q.gamma=gamma.prec)
+    } else if(missing(gamma.prec)) {
+      Q.gamma=matrix(0,nrow=length(gamma.0))
+      gamma=list(gamma.0=gamma.mean, Q.gamma=Q.gamma)
+    } else {gamma=list(gamma.0=gamma.mean, Q.gamma=gamma.prec)}
+  }
+  beta=list(
+    beta.0=rep(0,sum(model.data$trend=="const")+(sum(model.data$trend!="const")*2)),
+    Q.beta=Matrix(diag(
+      unlist(lapply(model.data$trend, 
+                  function(x){
+                    if(x!="const") {
+                      return(c(0,Q.trend))
+                    }else {
+                      return(c(0))
+                    }
+                  }))))
+  ) 
+
+  if(any(model.data$trend=="RW")){
+    tau=list(a.tau=0.5, b.tau=5.0E-5)
+  } else tau=NULL
+  zeta=list(a.zeta=0.5, b.zeta=5.0E-5)
+  if(use.zi & use.alpha) {
+    phi=list(a.phi=0.5, b.phi=5.0E-5)
+  } else phi=NULL
+  if(use.zi){
+    tmp=model.data$zero.inf[model.data$zero.inf!="none"]
+    theta.0=rep(0,sum(tmp=="const")+(sum(tmp!="const")*2))
+    theta=list(
+      theta.0=theta.0,
+      Q.theta=Matrix(diag(
+        unlist(lapply(tmp, 
+                      function(x){
+                        if(x!="const") {
+                          return(c(0,0))
+                        }else {
+                          return(c(0))
+                        }
+                      }))))
+      
+    )
+  } else theta=NULL
+  return(list(gamma=gamma, beta=beta, theta=theta, zeta=zeta, tau=tau, phi=phi)) 
+}
+
 #' @title Unscaled precision matrix for a random walk of order \code{p}.
 #' 
 #' @description This function calculates the entries for a precision matrix for a random walk of order \code{p}.
@@ -44,7 +131,7 @@ getSiteREInits <- function(data, abund.name, site.name, time.name, ln.adj,
   data$y <- log(data[,abund.name]+ln.adj)
   eta <- NULL
   tau <- NULL
-  xi <- NULL
+  zeta <- NULL
   b <- NULL
   num <- 1
   for(i in levels(data[,site.name])){
@@ -54,7 +141,7 @@ getSiteREInits <- function(data, abund.name, site.name, time.name, ln.adj,
       else fit <- lm(data[data[,site.name]==i,"y"]~data[data[,site.name]==i,time.name])
       eta <- c(eta, rep(0,nrow(newdata)))
       b <- c(b, as.vector(coef(fit)))
-      xi <- c(xi, 1/var(residuals(fit)))
+      zeta <- c(zeta, 1/var(residuals(fit)))
     }
     else{
       form <- as.formula(paste("y ~ s(", time.name,")", sep=""))
@@ -65,12 +152,12 @@ getSiteREInits <- function(data, abund.name, site.name, time.name, ln.adj,
       tau <- c(tau, (a.tau+r0.eta.s/2 -1)/(b.tau + as.vector(crossprod(eta.tmp, Q0.eta.s)%*%eta.tmp)/2))
       eta <- c(eta, eta.tmp)
       b <- c(b, as.vector(coef(lm.fit)))
-      xi <- c(xi, 1/var(residuals(fit)))
+      zeta <- c(zeta, 1/var(residuals(fit)))
     }
     num <- num+1
   }
-  xi <- ifelse(xi==Inf, max(xi[xi<Inf]), xi)
-  return(list(eta=eta, xi=xi, tau=tau, b=b))
+  zeta <- ifelse(zeta==Inf, max(zeta[zeta<Inf]), zeta)
+  return(list(eta=eta, zeta=zeta, tau=tau, b=b))
 }
 
 getSiteZIInits <- function(data.orig, abund.name, site.name, time.name,
@@ -221,7 +308,7 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   # y = Xy %*% gamma + M %*% z + eps
   # eps ~ N(0,Qy), Qy is known
   # Z = Xz %*% beta + eta + delta
-  # delta ~ N(0,Qdelta), Qdelta is diagonal with elements xi
+  # delta ~ N(0,Qdelta), Qdelta is diagonal with elements zeta
   # eta ~ N(0, Qeta); Qeta is a block diagonal RW(p) model with precision tau
   
   # DATA MANIPULATION / PREPARATION ###
@@ -364,13 +451,13 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
     a.tau <- prior.list$tau$a.tau
     b.tau <- prior.list$tau$b.tau
   }
-  #xi
-  if(is.null(prior.list$xi)){
-    a.xi <- 0.5
-    b.xi <- 5.0E-5
+  #zeta
+  if(is.null(prior.list$zeta)){
+    a.zeta <- 0.5
+    b.zeta <- 5.0E-5
   } else{
-    a.xi <- prior.list$xi$a.xi
-    b.xi <- prior.list$xi$b.xi
+    a.zeta <- prior.list$zeta$a.zeta
+    b.zeta <- prior.list$zeta$b.zeta
   }
   #phi
   if(use.alpha){
@@ -388,8 +475,8 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
       Qt <- matrix(0,ncol(Xq), ncol(Xq))
       t0 <- rep(0,ncol(Xq))
     } else{
-      Qt <- prior.list$beta$Q.theta
-      t0 <- prior.list$beta$theta.0
+      Qt <- prior.list$theta$Q.theta
+      t0 <- prior.list$theta$theta.0
     }
   }
   
@@ -437,9 +524,9 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   Tau <- Diagonal(x=rep(tau, each=n.year))
   Qeta <- Tau %*% Qeta.0
   eta <- inits$eta
-  #Qdelta and xi
-  xi <- inits$xi
-  Qdelta <-  Diagonal(x=rep(xi, each=n.year))
+  #Qdelta and zeta
+  zeta <- inits$zeta
+  Qdelta <-  Diagonal(x=rep(zeta, each=n.year))
   #z 
   MQepsM <- crossprod(M,Qeps) %*% M
   MQeps <- crossprod(M,Qeps)
@@ -495,12 +582,12 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
       colnames(phi.stor) <- as.character(model.data[model.data$zero.infl=="RW", site.name])
     }
   }
-  #tau and xi
+  #tau and zeta
   if(keep.site.param){
     tau.stor <- matrix(nrow=iter, ncol=sum(model.data$trend=="RW"))
     colnames(tau.stor) <- as.character(model.data[model.data$trend=="RW", site.name])
-    xi.stor <- matrix(nrow=iter, ncol=n.site)
-    colnames(xi.stor) <- as.character(levels(data.orig[,site.name]))
+    zeta.stor <- matrix(nrow=iter, ncol=n.site)
+    colnames(zeta.stor) <- as.character(levels(data.orig[,site.name]))
   }
   # MCMC UPDATES ###
   st.mcmc <- Sys.time()
@@ -564,12 +651,12 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
     Tau <- Diagonal(x=rep(tau, each=n.year))
     Qeta <- Tau %*% Qeta.0
     
-    #update xi
+    #update zeta
     res.z2 <- as.vector((z-muz-eta)^2)
-    b1.xi <- b.xi + aggregate(res.z2, list(site.idx), FUN=sum)$x/2
-    a1.xi <- a.xi + n.year/2
-    xi <- rgamma(n.site, a1.xi, b1.xi)
-    Qdelta <-  Diagonal(x=rep(xi, each=n.year))
+    b1.zeta <- b.zeta + aggregate(res.z2, list(site.idx), FUN=sum)$x/2
+    a1.zeta <- a.zeta + n.year/2
+    zeta <- rgamma(n.site, a1.zeta, b1.zeta)
+    Qdelta <-  Diagonal(x=rep(zeta, each=n.year))
         
     #aggregate abundence trends
     N.obs <- exp(as.vector(z))-ln.adj
@@ -602,7 +689,7 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
         if(keep.site.param){
           b.stor[j,] <- as.vector(b)
           tau.stor[j,] <- tau
-          xi.stor[j,] <- xi
+          zeta.stor[j,] <- zeta
         }
         if(keep.obs.param & use.gam) g.stor[j,] <- as.numeric(g)
         if(use.zi & keep.site.param){
@@ -634,7 +721,7 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
     site.param=list(
       beta=mcmc(b.stor),
       tau=mcmc(tau.stor),
-      xi=mcmc(xi.stor)
+      zeta=mcmc(zeta.stor)
     )
   }
   else site.param=NULL
