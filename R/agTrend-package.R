@@ -179,7 +179,7 @@ NULL
             "To access the help files type:\n",
             "\t help('agTrend-package')\n\n",
             "Note: agTrend uses the 'Matrix' package for linear algebra operations.\n",
-            "Users may see sereral 'Note:' messages at the onset of the MCMC,\n",
+            "Users may see several 'Note:' messages at the onset of the MCMC,\n",
             "This is normal and will only happen on the first analysis of an R session.\n\n"
             )
     )
