@@ -52,21 +52,21 @@
 <h3>
 <a name="downloading-a-binary-file" class="anchor" href="#downloading-a-binary-file"><span class="octicon octicon-link"></span></a>Downloading a binary file</h3>
 
-<p>If you are using a Windows or Mac OSX machine, you can also download prebuilt binary files for installation. The Mac OSX version is available <a href="https://github.com/NMML/agTrend/releases/download/v0.15/agTrend_0.15.tgz">here</a>. The windows version is downloaded <a href="https://github.com/NMML/agTrend/releases/download/v0.15/agTrend_0.15.zip">here</a>. If you are running a Linux machine, see the following section. <em>Note</em>: make sure your browser does not try to automatically unpack the file (this is the default for Safari, go into preferences to change this feature). </p>
+<p>If you are using a Windows or Mac OSX machine, you can also download prebuilt binary files for installation. The Mac OSX version is available <a href="https://github.com/NMML/agTrend/releases/download/v0.16/agTrend_0.16.tgz">here</a>. The windows version is downloaded <a href="https://github.com/NMML/agTrend/releases/download/v0.16/agTrend_0.16.zip">here</a>. If you are running a Linux machine, see the following section. <em>Note</em>: make sure your browser does not try to automatically unpack the file (this is the default for Safari, go into preferences to change this feature). </p>
 
 <p>After you download the file, open R and set the working directory (e.g., using <code>setwd("path/to/download/dir/")</code>). Once this is set, run</p>
 
-<pre><code>&gt; install.packages("agTrend_0.15.zip", repos=NULL)
+<pre><code>&gt; install.packages("agTrend_0.16.zip", repos=NULL)
 </code></pre>
 
-<p>If you have a mac replace with "agTrend_0.15.zip" with "agTrend_0.15.tgz".</p>
+<p>If you have a mac replace with "agTrend_0.16.zip" with "agTrend_0.16.tgz".</p>
 
 <h3>
 <a name="downloading-the-source-file" class="anchor" href="#downloading-the-source-file"><span class="octicon octicon-link"></span></a>Downloading the source file</h3>
 
-<p>Source files for each version can be downloaded <a href="https://github.com/NMML/agTrend/releases/download/v0.15/agTrend_0.15.tar.gz">here</a>. The desired file can be downloaded and installed in the same way as with the binaries, e.g., </p>
+<p>Source files for each version can be downloaded <a href="https://github.com/NMML/agTrend/releases/download/v0.16/agTrend_0.16.tar.gz">here</a>. The desired file can be downloaded and installed in the same way as with the binaries, e.g., </p>
 
-<pre><code>&gt; install.packages("agTrend_0.15.tar.gz", repos=NULL, type="source")
+<pre><code>&gt; install.packages("agTrend_0.16.tar.gz", repos=NULL, type="source")
 </code></pre>
 
 <h3>
@@ -102,14 +102,13 @@
 
 <pre><code>Loading required package: coda
 Loading required package: lattice
-Loading required package: Matrix
 Loading required package: mgcv
 Loading required package: nlme
 This is mgcv 1.7-26. For overview type 'help("mgcv-package")'.
 Loading required package: truncnorm
 
 
- agTrend 0.15 (2013-11-14) 
+ agTrend 0.16 (2013-11-22) 
 
  Type 'demo(package='agTrend')' to see a list of demos for this package.
 
@@ -120,7 +119,7 @@ Loading required package: truncnorm
      help('agTrend-package')
 
  Note: agTrend uses the 'Matrix' package for linear algebra operations.
- Users may see sereral 'Note:' messages at the onset of the MCMC,
+ Users may see several 'Note:' messages at the onset of the MCMC,
  This is normal and will only happen on the first analysis of an R session.
 
 
