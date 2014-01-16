@@ -16,14 +16,14 @@
 \item{count}{Survey count of pups at each site}
 }}
 \source{
-  Alaska Ecosystems Program, National Marine Mammal
-  Laboratory, Alaska Fisheries Science Center, National
-  Marine Fisheries Service, NOAA, 7600 Sand Point Way, NE
-  Seattle, WA 98115
+Alaska Ecosystems Program, National Marine Mammal
+Laboratory, Alaska Fisheries Science Center, National
+Marine Fisheries Service, NOAA, 7600 Sand Point Way, NE
+Seattle, WA 98115
 }
 \description{
-  Pup counts from surveys of the western Distict
-  Populations Segment (wDPS) of Steller sea lions.
+Pup counts from surveys of the western Distict Populations
+Segment (wDPS) of Steller sea lions.
 }
 \examples{
 data(wdpsPups)

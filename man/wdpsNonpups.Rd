@@ -30,22 +30,22 @@ Population Segment of the stock (wDPS).}
 \item{count}{The count of nonpups observed}
 }}
 \source{
-  Alaska Ecosystems Program, National Marine Mammal
-  Laboratory, Alaska Fisheries Science Center, National
-  Marine Fisheries Service, NOAA, 7600 Sand Point Way, NE
-  Seattle, WA 98115
+Alaska Ecosystems Program, National Marine Mammal
+Laboratory, Alaska Fisheries Science Center, National
+Marine Fisheries Service, NOAA, 7600 Sand Point Way, NE
+Seattle, WA 98115
 }
 \description{
-  Steller sea lion survey data (nonpup counts) collected by
-  the NOAA National Marine Mammal Laboratory in the western
-  Distinct Population Segment of the stock (wDPS).
+Steller sea lion survey data (nonpup counts) collected by
+the NOAA National Marine Mammal Laboratory in the western
+Distinct Population Segment of the stock (wDPS).
 }
 \examples{
 data(wdpsNonpups)
 head(wdpsNonpups)
 }
 \references{
-  Need a tech report / memo reference...
+Need a tech report / memo reference...
 }
 \keyword{datasets}
 

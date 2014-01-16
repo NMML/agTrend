@@ -421,8 +421,8 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   Q0.alpha.s <- Matrix(iar.Q(n.year, alpha.order))
   r0.eta.s <- dim(Q0.eta.s)[1] - eta.order
   r0.alpha.s <- dim(Q0.alpha.s)[1] - alpha.order
-  if(use.eta) Qeta.0 <- kronecker(Diagonal(sum(model.data$trend=="RW")), Q0.eta.s)
-  if(use.alpha) Qalpha.0 <- kronecker(Diagonal(sum(model.data$zero.infl=="RW")), Q0.alpha.s)
+  if(use.eta) suppressMessages(Qeta.0 <- kronecker(Diagonal(sum(model.data$trend=="RW")), Q0.eta.s))
+  if(use.alpha) suppressMessages(Qalpha.0 <- kronecker(Diagonal(sum(model.data$zero.infl=="RW")), Q0.alpha.s))
   
   # PRIORS ###
   #gamma
@@ -502,7 +502,7 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
     a <- inits.zi$alpha
     theta <- inits.zi$theta
     phi <- inits.zi$phi
-    muq <- as.vector(Xq%*%theta)
+    muq <- as.vector(suppressMessages(Xq%*%theta))
     q <- as.vector(Xq%*%theta + a)
     if(use.alpha){
       Phi <- Diagonal(x=rep(phi, each=n.year))
@@ -522,7 +522,7 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   #tau and eta
   tau <- inits$tau
   Tau <- Diagonal(x=rep(tau, each=n.year))
-  Qeta <- Tau %*% Qeta.0
+  Qeta <- suppressMessages(Tau %*% Qeta.0)
   eta <- inits$eta
   #Qdelta and zeta
   zeta <- inits$zeta
@@ -618,7 +618,7 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
       }
       #theta
       D.t <- crossprod(Xq) + Qt
-      d.t <- crossprod(Xq, z.01.tilde-a) + Qt%*%t0
+      d.t <- suppressMessages(crossprod(Xq, z.01.tilde-a) + Qt%*%t0)
       theta <- solve(D.t,d.t) + solve(chol(D.t), rnorm(ncol(Xq),0,1))
       muq <- Xq%*%theta
       q <- as.vector(muq + a)
@@ -633,7 +633,7 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
     }
   
     #update beta
-    D.b <- crossprod(Xz, Qdelta) %*% Xz + Qb
+    D.b <- suppressMessages(crossprod(Xz, Qdelta) %*% Xz + Qb)
     d.b <- crossprod(Xz,Qdelta)%*%(z-eta) + Qbb0
     b <- solve(D.b,d.b) + solve(chol(D.b), rnorm(ncol(Xz),0,1))
     muz <- Xz%*%b
@@ -666,8 +666,9 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
     ag.trend <- H%*%ag.abund
     
     #posterior predictive trend
-    if(!use.trunc) z.pred <- as.vector(muz + eta + rnorm(bigN, 0, 1/sqrt(Qdelta@x)))
-    else z.pred <- rtruncnorm(bigN, a=lower, b=upper, mean=as.vector(muz+eta), sd=1/sqrt(Qdelta@x))
+    if(!use.trunc) {
+      z.pred <- as.vector(muz + eta + rnorm(bigN, 0, 1/sqrt(Qdelta@x)))
+    } else z.pred <- rtruncnorm(bigN, a=lower, b=upper, mean=as.vector(muz+eta), sd=1/sqrt(Qdelta@x))
     N.pred <- exp(z.pred)-ln.adj
     if(use.zi) N.pred[qzi] <- ifelse(rnorm(sum(qzi), mean=q, sd=1)>0,1,0)*N.pred[qzi] 
     ag.abund.pred <- aggregate(N.pred, list(yr.idx, agg.idx), FUN=sum)

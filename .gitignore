@@ -6,3 +6,4 @@
 data_proc/*.xlsx
 demo_results/
 builds
+/.project

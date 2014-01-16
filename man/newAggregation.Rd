@@ -2,7 +2,7 @@
 \alias{newAggregation}
 \title{Recalculate new site aggregations from a previous MCMC aggregation}
 \usage{
-  newAggregation(fit, aggregation.data, type = "pred")
+newAggregation(fit, aggregation.data, type = "pred")
 }
 \arguments{
   \item{fit}{The output list from a previous call to
@@ -22,17 +22,16 @@
   \code{"rel"} for realized (just the posterior).}
 }
 \value{
-  A named list with names equal to the variables in
-  \code{aggregation.data}. Each element of the list is
-  another list with elements: \item{aggregated.abund}{The
-  MCMC sample of the new aggregation}
-  \item{aggregation.summary}{A summary of the aggregation
-  MCMC}
+A named list with names equal to the variables in
+\code{aggregation.data}. Each element of the list is
+another list with elements: \item{aggregated.abund}{The
+MCMC sample of the new aggregation}
+\item{aggregation.summary}{A summary of the aggregation
+MCMC}
 }
 \description{
-  If the site abundence sample was retained in a call to
-  \code{\link{mcmc.aggregate}} the sites can be
-  re-aggregated according to different region
-  specifications.
+If the site abundence sample was retained in a call to
+\code{\link{mcmc.aggregate}} the sites can be re-aggregated
+according to different region specifications.
 }
 

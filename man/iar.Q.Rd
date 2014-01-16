@@ -2,7 +2,7 @@
 \alias{iar.Q}
 \title{Unscaled precision matrix for a random walk of order \code{p}.}
 \usage{
-  iar.Q(n, p)
+iar.Q(n, p)
 }
 \arguments{
   \item{n}{The length of the RW(p) process. The length must
@@ -11,16 +11,16 @@
   \item{p}{The order of the random walk process.}
 }
 \value{
-  A matrix
+A matrix
 }
 \description{
-  This function calculates the entries for a precision
-  matrix for a random walk of order \code{p}. It is used in
-  the MCMC augementation with \code{p=2}, but, it is
-  presented here for general use.
+This function calculates the entries for a precision matrix
+for a random walk of order \code{p}. It is used in the MCMC
+augementation with \code{p=2}, but, it is presented here
+for general use.
 }
 \references{
-  H. Rue and L. Held (2005) Gaussian Markov Random Fields.
-  Chapman & Hall/CRC. 263 pp.
+H. Rue and L. Held (2005) Gaussian Markov Random Fields.
+Chapman & Hall/CRC. 263 pp.
 }
 

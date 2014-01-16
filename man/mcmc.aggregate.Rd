@@ -2,12 +2,11 @@
 \alias{mcmc.aggregate}
 \title{Posterior predictive sampling, aggregtion of abundance counts, and linear trend summary}
 \usage{
-  mcmc.aggregate(start, end, data, obs.formula = NULL,
-    aggregation, model.data, rw.order = NULL, abund.name,
-    time.name, site.name, sig.abund, forecast = FALSE,
-    ln.adj = 0, upper = Inf, lower = -Inf, burn, iter,
-    thin = 1, prior.list = NULL, keep.site.abund = FALSE,
-    keep.site.param = FALSE, keep.obs.param = FALSE)
+mcmc.aggregate(start, end, data, obs.formula = NULL, aggregation, model.data,
+  rw.order = NULL, abund.name, time.name, site.name, sig.abund,
+  forecast = FALSE, ln.adj = 0, upper = Inf, lower = -Inf, burn, iter,
+  thin = 1, prior.list = NULL, keep.site.abund = FALSE,
+  keep.site.param = FALSE, keep.obs.param = FALSE)
 }
 \arguments{
   \item{start}{The starting time for trend estimation}
@@ -77,100 +76,98 @@
   parameters (gamma) be retianed.}
 }
 \value{
-  A named list with the following elements:
-  \item{trend.summary}{Summary of the posterior predictive
-  linear trend} \item{aggregation.summary}{Summary of the
-  site aggregations for every time between the first and
-  last} \item{site.summary}{A summary of the abundance
-  augmentation for every site and every time.}
-  \item{mcmc.sample}{A named list containing all of the
-  MCMC sample after thinning.} \item{original.data}{The
-  original data in \code{data}.}
+A named list with the following elements:
+\item{trend.summary}{Summary of the posterior predictive
+linear trend} \item{aggregation.summary}{Summary of the
+site aggregations for every time between the first and
+last} \item{site.summary}{A summary of the abundance
+augmentation for every site and every time.}
+\item{mcmc.sample}{A named list containing all of the MCMC
+sample after thinning.} \item{original.data}{The original
+data in \code{data}.}
 }
 \description{
-  Function for sampling from the posterior predictive
-  distribution of abundance (counts) at individual sites.
-  Then aggregating the counts over the specified
-  aggregation variable.
+Function for sampling from the posterior predictive
+distribution of abundance (counts) at individual sites.
+Then aggregating the counts over the specified aggregation
+variable.
 }
 \details{
-  This function is the workhorse for the \code{agTrend}
-  package. It performs MCMC sampling of the posterior
-  predictive distribution of the abundance at each site at
-  each time, \eqn{N_{st}}{N_st}. The abundance at each site
-  is modeled, in its most general form, with a
-  zero-inflated, nonparameteric model, \deqn{z_{st} =
-  \beta_{s0} + \beta_{s1}t + \eta_{st} + \delta_{st} \mbox{
-  if } N_{st}>0,}{z_st = beta_s0 + beta_s1 * t + eta_st +
-  delta_st if N_st > 0,} where
-  \eqn{\beta_{s0}+\beta_{s1}t}{beta_s0 + beta_s1 * t} is
-  the linear trend, \eqn{\eta}{eta} is a random walk (of
-  order 1 or 2) (RW), and \eqn{\delta_{st}}{delta_st} is an
-  iid normal error variable. The zero-inflation part is
-  added via the probit regression model
-  \deqn{\mbox{probit}\{P(N_{st}>0)\} = \theta_{s0} +
-  \theta_{s1}t + \alpha_{st},}{probit{P(N_st > 0)} =
-  theta_s0 + theta_s1 * t + alpha_st,} where
-  \eqn{\theta_{s0}}{theta_s0} and
-  \eqn{\theta_{s1}}{theta_s1} are linear regression
-  coefficients and \eqn{\alpha}{alpha} is a RW model.
+This function is the workhorse for the \code{agTrend}
+package. It performs MCMC sampling of the posterior
+predictive distribution of the abundance at each site at
+each time, \eqn{N_{st}}{N_st}. The abundance at each site
+is modeled, in its most general form, with a zero-inflated,
+nonparameteric model, \deqn{z_{st} = \beta_{s0} +
+\beta_{s1}t + \eta_{st} + \delta_{st} \mbox{ if }
+N_{st}>0,}{z_st = beta_s0 + beta_s1 * t + eta_st + delta_st
+if N_st > 0,} where \eqn{\beta_{s0}+\beta_{s1}t}{beta_s0 +
+beta_s1 * t} is the linear trend, \eqn{\eta}{eta} is a
+random walk (of order 1 or 2) (RW), and
+\eqn{\delta_{st}}{delta_st} is an iid normal error
+variable. The zero-inflation part is added via the probit
+regression model \deqn{\mbox{probit}\{P(N_{st}>0)\} =
+\theta_{s0} + \theta_{s1}t + \alpha_{st},}{probit{P(N_st >
+0)} = theta_s0 + theta_s1 * t + alpha_st,} where
+\eqn{\theta_{s0}}{theta_s0} and \eqn{\theta_{s1}}{theta_s1}
+are linear regression coefficients and \eqn{\alpha}{alpha}
+is a RW model.
 
-  In order to account for observation effects or changing
-  methodology through time one can specify an
-  \code{obs.model}. The \code{obs.model} is a R formula
-  object that specifies variables in \code{data} that can
-  account for differences due to sampling methodology
-  alone. If \code{obs.model} is provided, the observation
-  model is specified as \deqn{y_{st} = x_{st}'\gamma +
-  z_{st} + \epsilon_{st},}{y_st = x_st gamma + z_st +
-  eps_st,} where \eqn{y_{st}}{y_st} is the raw observed log
-  abundance, \eqn{x_{st}}{x_st} is a vector of covariates
-  used to standardize the observed abundance,
-  \eqn{\gamma}{gamma} is a vector of coefficients, and
-  \eqn{[\epsilon_{st}]=N(0,\sigma^2_{st})}{[eps_st]=N(0,sigma_st^2)}.
-  Currently, \eqn{\sigma_{st}}{sigma_st} is considered to
-  be known and is specified as a column in \code{data} by
-  the \code{sig.abund} argument. Thus, \eqn{z_{st}}{z_st}
-  represents the standardized (wrt the survey method)
-  abundance. See \code{demo(wdpsNonpups)} for an example.
+In order to account for observation effects or changing
+methodology through time one can specify an
+\code{obs.model}. The \code{obs.model} is a R formula
+object that specifies variables in \code{data} that can
+account for differences due to sampling methodology alone.
+If \code{obs.model} is provided, the observation model is
+specified as \deqn{y_{st} = x_{st}'\gamma + z_{st} +
+\epsilon_{st},}{y_st = x_st gamma + z_st + eps_st,} where
+\eqn{y_{st}}{y_st} is the raw observed log abundance,
+\eqn{x_{st}}{x_st} is a vector of covariates used to
+standardize the observed abundance, \eqn{\gamma}{gamma} is
+a vector of coefficients, and
+\eqn{[\epsilon_{st}]=N(0,\sigma^2_{st})}{[eps_st]=N(0,sigma_st^2)}.
+Currently, \eqn{\sigma_{st}}{sigma_st} is considered to be
+known and is specified as a column in \code{data} by the
+\code{sig.abund} argument. Thus, \eqn{z_{st}}{z_st}
+represents the standardized (wrt the survey method)
+abundance. See \code{demo(wdpsNonpups)} for an example.
 
-  For each iteration of the MCMC sampler, the complete data
-  is aggregated (i.e., summed) over all sites within a
-  specified region (defined by the \code{aggregation}
-  argument). Thus, one can obtain a posterior predictive
-  sample from the aggregated abundance for every time
-  between the first time in the data set and the last. By
-  using the posterior predictive distribution, we can
-  account for parameter uncertainty at each site as well as
-  sampling variability of the survey. Even though we are
-  using the Bayesian inference paradigm, we still capture
-  the essence of frequentist inference by accounting for
-  the 'replication' of the survey effort by using the
-  predictive distribution even for times and places where
-  we have survey data. Using the aggregations, the average
-  linear trend is calculated for all years from
-  \code{start} to \code{end} for each MCMC iteration.
+For each iteration of the MCMC sampler, the complete data
+is aggregated (i.e., summed) over all sites within a
+specified region (defined by the \code{aggregation}
+argument). Thus, one can obtain a posterior predictive
+sample from the aggregated abundance for every time between
+the first time in the data set and the last. By using the
+posterior predictive distribution, we can account for
+parameter uncertainty at each site as well as sampling
+variability of the survey. Even though we are using the
+Bayesian inference paradigm, we still capture the essence
+of frequentist inference by accounting for the
+'replication' of the survey effort by using the predictive
+distribution even for times and places where we have survey
+data. Using the aggregations, the average linear trend is
+calculated for all years from \code{start} to \code{end}
+for each MCMC iteration.
 
-  The \code{model.data} data.frame can be provided to
-  reduce the most general model given above to submodels
-  when there is not adequate data to fit the full model or,
-  if zero-inflation is not necessary. The \code{model.data}
-  must be a \code{data.frame} with columns \itemize{
-  \item{\code{site.name}- Column of all the sites in
-  \code{data}. The name must be given by \code{site.name}}
-  \item{\code{trend}- A column of all augmentation models
-  to be used at each site, can be one, any only one, of the
-  following: \code{c("const","lin","RW")} for a constant
-  mean, linear mean, RW model respectively. Each
-  generalization includes all previous models, e.g., an RW
-  model contains a linear slope and an intercept.}
-  \item{\code{zero.infl}- The same as the \code{trend}
-  column, except this specifies the model for the
-  zero-inflation component and can additionally include
-  \code{"none"} if a zero-inflation model is not desired.}
-  }
+The \code{model.data} data.frame can be provided to reduce
+the most general model given above to submodels when there
+is not adequate data to fit the full model or, if
+zero-inflation is not necessary. The \code{model.data} must
+be a \code{data.frame} with columns \itemize{
+\item{\code{site.name}- Column of all the sites in
+\code{data}. The name must be given by \code{site.name}}
+\item{\code{trend}- A column of all augmentation models to
+be used at each site, can be one, any only one, of the
+following: \code{c("const","lin","RW")} for a constant
+mean, linear mean, RW model respectively. Each
+generalization includes all previous models, e.g., an RW
+model contains a linear slope and an intercept.}
+\item{\code{zero.infl}- The same as the \code{trend}
+column, except this specifies the model for the
+zero-inflation component and can additionally include
+\code{"none"} if a zero-inflation model is not desired.} }
 
-  Examples of this function's use can be seen in the
-  \code{demo(package="agTrend")} files.
+Examples of this function's use can be seen in the
+\code{demo(package="agTrend")} files.
 }
 

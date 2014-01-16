@@ -2,7 +2,7 @@
 \alias{updateTrend}
 \title{Recalculate posterior predictive trend with a different time scale.}
 \usage{
-  updateTrend(x, start, end, type = "pred", order = "lin")
+updateTrend(x, start, end, type = "pred", order = "lin")
 }
 \arguments{
   \item{x}{An mcmc augmentation object produced by a call
@@ -23,7 +23,7 @@
   mean log-abundence.}
 }
 \description{
-  Recalculate posterior predictive trend with a different
-  time scale.
+Recalculate posterior predictive trend with a different
+time scale.
 }
 
