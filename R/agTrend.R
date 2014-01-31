@@ -414,7 +414,7 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   }
   # Precision for epsilon
   if(!missing(sig.abund)) {
-    Qeps <- Diagonal(1/data[,sig.abund]^2)
+    Qeps <- Diagonal(x=1/log(1+(data[,sig.abund]/data[,abund.name])^2))
   } else {Qeps <- Diagonal(x=rep(1.0E8, length(y)))}
   # Precision for eta and alpha
   Q0.eta.s <- Matrix(iar.Q(n.year, eta.order))
