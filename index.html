@@ -36,10 +36,10 @@
 <h2>
 <a name="installing-agtrend" class="anchor" href="#installing-agtrend"><span class="octicon octicon-link"></span></a>Installing agTrend</h2>
 
-<p>There are two basic methods to install the agTrend package, from within R itself using the devtools package and downloading a binary appropriate to your operating system. If you are using a windows machine it is possible that you will need <a href="http://cran.r-project.org/bin/windows/Rtools/">Rtools</a> installed to build and install the package. There is no compiled code in agTrend. </p>
+<p>There are two basic methods to install the agTrend package, from within R itself using the devtools package or downloading a binary appropriate to your operating system. If you are using a windows machine it is possible that you will need <a href="http://cran.r-project.org/bin/windows/Rtools/">Rtools</a> installed to build and install the package. There is no compiled code in agTrend. </p>
 
 <h3>
-<a name="using-devtools" class="anchor" href="#using-devtools"><span class="octicon octicon-link"></span></a>Using devtools</h3>
+<a name="using-devtools-guaranteed-up-to-date-version" class="anchor" href="#using-devtools-guaranteed-up-to-date-version"><span class="octicon octicon-link"></span></a>Using devtools (guaranteed up-to-date version)</h3>
 
 <p>You can obtain the agTrend package using the GitHub installation function within the devtools R package. If devtools is not installed, it can be installed from CRAN by typing <code>install.packages("devtools")</code> from within the R console.</p>
 
@@ -52,11 +52,11 @@
 <h3>
 <a name="downloading-a-binary-file" class="anchor" href="#downloading-a-binary-file"><span class="octicon octicon-link"></span></a>Downloading a binary file</h3>
 
-<p>If you are using a Windows or Mac OSX machine, you can also download prebuilt binary files for installation. The Mac OSX version is available <a href="https://github.com/NMML/agTrend/releases/download/v0.17/agTrend_0.17.tgz">here</a>. The windows version is downloaded <a href="https://github.com/NMML/agTrend/releases/download/v0.17/agTrend_0.17.zip">here</a>. If you are running a Linux machine, see the following section. <em>Note</em>: make sure your browser does not try to automatically unpack the file (this is the default for Safari, go into preferences to change this feature). </p>
+<p>If you are using a Windows or Mac OSX machine, you can also download prebuilt binary files for installation. The Mac OSX version is available <a href="https://github.com/NMML/agTrend/releases/download/v0.17.1/agTrend_0.17.1.tgz">here</a>. The windows version is downloaded <a href="https://github.com/NMML/agTrend/releases/download/v0.17.1/agTrend_0.17.1.zip">here</a>. If you are running a Linux machine, see the following section. <em>Note</em>: make sure your browser does not try to automatically unpack the file (this is the default for Safari, go into preferences to change this feature). </p>
 
 <p>After you download the file, open R and set the working directory (e.g., using <code>setwd("path/to/download/dir/")</code>). Once this is set, run</p>
 
-<pre><code>&gt; install.packages("agTrend_0.17.zip", repos=NULL)
+<pre><code>&gt; install.packages("agTrend_0.17.1.zip", repos=NULL)
 </code></pre>
 
 <p>If you have a mac replace with "agTrend_0.17.zip" with "agTrend_0.17.tgz".</p>
@@ -64,9 +64,9 @@
 <h3>
 <a name="downloading-the-source-file" class="anchor" href="#downloading-the-source-file"><span class="octicon octicon-link"></span></a>Downloading the source file</h3>
 
-<p>Source files for each version can be downloaded <a href="https://github.com/NMML/agTrend/releases/download/v0.17/agTrend_0.17.tar.gz">here</a>. The desired file can be downloaded and installed in the same way as with the binaries, e.g., </p>
+<p>Source files for each version can be downloaded <a href="https://github.com/NMML/agTrend/releases/download/v0.17/agTrend_0.17.1.tar.gz">here</a>. The desired file can be downloaded and installed in the same way as with the binaries, e.g., </p>
 
-<pre><code>&gt; install.packages("agTrend_0.17.tar.gz", repos=NULL, type="source")
+<pre><code>&gt; install.packages("agTrend_0.17.1.tar.gz", repos=NULL, type="source")
 </code></pre>
 
 <h3>
@@ -108,7 +108,7 @@ This is mgcv 1.7-26. For overview type 'help("mgcv-package")'.
 Loading required package: truncnorm
 
 
- agTrend 0.17 (2014-01-16) 
+ agTrend 0.17.1 (2014-01-31) 
 
  Type 'demo(package='agTrend')' to see a list of demos for this package.
 
