@@ -210,6 +210,7 @@ getSiteZIInits <- function(data.orig, abund.name, site.name, time.name,
 #' @param time.name  A character string giving the name of the time variable
 #' @param site.name  A character string giving the name of the site variable. The variable should be a factor
 #' @param sig.abund  A numeric vector the same length as \code{nrow(data)} which contains the known observation error standard deviations.
+#' @param incl.zeros If \code{incl.zeros=TRUE} (default), and zero inflation models are used, then the zeros become part of the 'true' abundance process and are used for trend estimation and abundance prediction. 
 #' @param forecast A logical indicating whether to allow forecasting aggregations past the last observed time.
 #' @param ln.adj  The adjustment for taking logs of counts if zeros are present, e.g., log(n + ln.adj).
 #' @param upper  A data frame containing the upper bounds for augmentation of each site. See 'Details'
@@ -278,7 +279,7 @@ getSiteZIInits <- function(data.orig, abund.name, site.name, time.name,
 #' @import truncnorm
 #' 
 mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, model.data, rw.order=NULL,
-                           abund.name, time.name, site.name, sig.abund, forecast=FALSE, 
+                           abund.name, time.name, site.name, sig.abund, incl.zeros=TRUE, forecast=FALSE, 
                            ln.adj=0, upper=Inf, lower=-Inf,
                            burn, iter, thin=1, prior.list=NULL, 
                            keep.site.abund=FALSE, keep.site.param=FALSE, keep.obs.param=FALSE
@@ -660,7 +661,9 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
         
     #aggregate abundence trends
     N.obs <- exp(as.vector(z))-ln.adj
-    if(use.zi) N.obs[qzi] <- ifelse(z.01.tilde>0, 1, 0)*N.obs[qzi]
+    if(use.zi){
+      if(incl.zeros) N.obs[qzi] <- ifelse(z.01.tilde>0, 1, 0)*N.obs[qzi]
+    }
     ag.abund <- aggregate(N.obs, list(yr.idx, agg.idx), FUN=sum)
     ag.abund <- log(ag.abund[ag.abund[,1]>=start & ag.abund[,1]<=end,"x"] + ln.adj)
     ag.trend <- H%*%ag.abund
@@ -670,7 +673,9 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
       z.pred <- as.vector(muz + eta + rnorm(bigN, 0, 1/sqrt(Qdelta@x)))
     } else z.pred <- rtruncnorm(bigN, a=lower, b=upper, mean=as.vector(muz+eta), sd=1/sqrt(Qdelta@x))
     N.pred <- exp(z.pred)-ln.adj
-    if(use.zi) N.pred[qzi] <- ifelse(rnorm(sum(qzi), mean=q, sd=1)>0,1,0)*N.pred[qzi] 
+    if(use.zi){
+      if(incl.zeros) N.pred[qzi] <- ifelse(rnorm(sum(qzi), mean=q, sd=1)>0,1,0)*N.pred[qzi]
+    }
     ag.abund.pred <- aggregate(N.pred, list(yr.idx, agg.idx), FUN=sum)
     ag.abund.pred <- log(ag.abund.pred[ag.abund.pred[,1]>=start & ag.abund.pred[,1]<=end,"x"] + ln.adj)
     ag.pred.trend <- H%*%ag.abund.pred

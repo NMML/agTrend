@@ -4,9 +4,10 @@
 \usage{
 mcmc.aggregate(start, end, data, obs.formula = NULL, aggregation, model.data,
   rw.order = NULL, abund.name, time.name, site.name, sig.abund,
-  forecast = FALSE, ln.adj = 0, upper = Inf, lower = -Inf, burn, iter,
-  thin = 1, prior.list = NULL, keep.site.abund = FALSE,
-  keep.site.param = FALSE, keep.obs.param = FALSE)
+  incl.zeros = TRUE, forecast = FALSE, ln.adj = 0, upper = Inf,
+  lower = -Inf, burn, iter, thin = 1, prior.list = NULL,
+  keep.site.abund = FALSE, keep.site.param = FALSE,
+  keep.obs.param = FALSE)
 }
 \arguments{
   \item{start}{The starting time for trend estimation}
@@ -41,6 +42,11 @@ mcmc.aggregate(start, end, data, obs.formula = NULL, aggregation, model.data,
   \item{sig.abund}{A numeric vector the same length as
   \code{nrow(data)} which contains the known observation
   error standard deviations.}
+
+  \item{incl.zeros}{If \code{incl.zeros=TRUE} (default),
+  and zero inflation models are used, then the zeros become
+  part of the 'true' abundance process and are used for
+  trend estimation and abundance prediction.}
 
   \item{forecast}{A logical indicating whether to allow
   forecasting aggregations past the last observed time.}
