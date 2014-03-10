@@ -37,9 +37,9 @@
 defaultPriorList = function(trend.limit=NULL, model.data, gamma.mean, gamma.prec){
   if(is.null(trend.limit) & any(c("RW","lin")%in%model.data$trend)) stop("A value must be provided for 'trend.limit' when using 'lin' and 'RW' models!")
   if(!is.null(trend.limit)) Q.trend = 1/(log(1+trend.limit)/2)^2
-  use.zi = !is.null(model.data$zero.infl)
+  use.zi = !is.null(model.data$avail)
   if(!use.zi) use.alpha=FALSE
-  if(use.zi) use.alpha = any(model.data$zero.infl=="RW")
+  if(use.zi) use.alpha = any(model.data$avail=="RW")
   if(missing(gamma.mean) & missing(gamma.prec)){
     gamma=NULL
   } else {
@@ -72,7 +72,7 @@ defaultPriorList = function(trend.limit=NULL, model.data, gamma.mean, gamma.prec
     phi=list(a.phi=0.5, b.phi=5.0E-5)
   } else phi=NULL
   if(use.zi){
-    tmp=model.data$zero.inf[model.data$zero.inf!="none"]
+    tmp=model.data$avail[model.data$avail!="none"]
     theta.0=rep(0,sum(tmp=="const")+(sum(tmp!="const")*2))
     theta=list(
       theta.0=theta.0,
@@ -170,9 +170,9 @@ getSiteZIInits <- function(data.orig, abund.name, site.name, time.name,
   num <- 1
   for(i in levels(data.orig[,site.name])){
     models <- model.data[model.data[,site.name]==i,]
-    if(models$zero.infl=="none") next
-    else if(models$zero.infl%in%c("const","lin")){
-      if(models$zero.infl=="const") fit <- glm(data.orig[data.orig[,site.name]==i,"y"]~1, family=binomial(link="probit"))
+    if(models$avail=="none") next
+    else if(models$avail%in%c("const","lin")){
+      if(models$avail=="const") fit <- glm(data.orig[data.orig[,site.name]==i,"y"]~1, family=binomial(link="probit"))
       else fit <- glm(data.orig[data.orig[,site.name]==i,"y"]~data.orig[data.orig[,site.name]==i,time.name], family=binomial("probit"))
       alpha <- c(alpha, rep(0,nrow(newdata)))
       theta <- c(theta, as.vector(coef(fit)))
@@ -257,7 +257,7 @@ getSiteZIInits <- function(data.orig, abund.name, site.name, time.name,
 #' \item{\code{trend}- A column of all augmentation models to be used at each site, can be one, any only one, of the following: \code{c("const","lin","RW")}
 #' for a constant mean, linear mean, RW model respectively. Each generalization includes all previous models, e.g., an RW model contains a linear slope and 
 #' an intercept.}
-#' \item{\code{zero.infl}- The same as the \code{trend} column, except this specifies the model for the zero-inflation component and can additionally include \code{"none"}
+#' \item{\code{avail}- The same as the \code{trend} column, except this specifies the model for the zero-inflation component and can additionally include \code{"none"}
 #' if a zero-inflation model is not desired.}
 #' }
 #' 
@@ -286,16 +286,16 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
                            ){
   #require(Matrix)
   #require(coda)
-  use.trunc <- !is.null(model.data$zero.infl) | (any(upper!=Inf) | any(lower!=-Inf))
+  use.trunc <- !is.null(model.data$avail) | (any(upper!=Inf) | any(lower!=-Inf))
   #if(use.trunc) require(truncnorm)
-  use.zi <- !is.null(model.data$zero.infl)
-  if(use.zi) use.zi <- any(model.data$zero.infl!="none")
-  if(use.zi) use.alpha <- any(model.data$zero.infl=="RW")
+  use.zi <- !is.null(model.data$avail)
+  if(use.zi) use.zi <- any(model.data$avail!="none")
+  if(use.zi) use.alpha <- any(model.data$avail=="RW")
   else use.alpha <- FALSE
   use.gam <- !is.null(obs.formula)
   use.eta <- any(model.data$trend=="RW")
 
-  if(use.zi & !all(model.data$zero.infl%in%c("none","const","lin","RW"))){
+  if(use.zi & !all(model.data$avail%in%c("none","const","lin","RW"))){
     stop("\n Error: currently the only models for zero-inflation are: 'none', 'const', 'lin', or 'RW'\n")
   }
   if(!all(model.data$trend%in%c("const","lin","RW"))){
@@ -353,10 +353,10 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   # alpha and fixed q
   q.data <- merge(data.frame(site.idx), model.data, by.y=site.name, by.x=1)
   if(use.alpha){
-    qrw <- c(q.data$zero.infl=="RW")[q.data[,1]%in%model.data[model.data$zero.infl!="none",site.name]]
+    qrw <- c(q.data$avail=="RW")[q.data[,1]%in%model.data[model.data$avail!="none",site.name]]
     Nqrw <- sum(qrw)
   }
-  qzi <- c(q.data$zero.infl!="none")
+  qzi <- c(q.data$avail!="none")
   Nzi <- sum(qzi)
   # upper and lower bounds for zi draws
   data.orig <- data
@@ -407,7 +407,7 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
     alpha.order=rw.order$alpha
   } else{alpha.order=1}
   if(use.zi){
-    Xq <- .bdiag(lapply(model.data$zero.infl[model.data$zero.infl!="none"], 
+    Xq <- .bdiag(lapply(model.data$avail[model.data$avail!="none"], 
                             function(x){
                               if(x=="const"){return(matrix(rep(1,n.year), ncol=1))}
                               else return(cbind(rep(1,n.year),d.yrs))                         
@@ -423,7 +423,7 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   r0.eta.s <- dim(Q0.eta.s)[1] - eta.order
   r0.alpha.s <- dim(Q0.alpha.s)[1] - alpha.order
   if(use.eta) suppressMessages(Qeta.0 <- kronecker(Diagonal(sum(model.data$trend=="RW")), Q0.eta.s))
-  if(use.alpha) suppressMessages(Qalpha.0 <- kronecker(Diagonal(sum(model.data$zero.infl=="RW")), Q0.alpha.s))
+  if(use.alpha) suppressMessages(Qalpha.0 <- kronecker(Diagonal(sum(model.data$avail=="RW")), Q0.alpha.s))
   
   # PRIORS ###
   #gamma
@@ -576,11 +576,11 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   }
   #p and phi
   if(keep.site.param & use.zi){
-    p.stor <- matrix(nrow=iter, ncol=n.year*sum(model.data$zero.infl!="none")) 
-    colnames(p.stor) <- apply(expand.grid(d.yrs, as.character(model.data[model.data$zero.infl!="none",site.name])),1,paste,collapse=":")
+    p.stor <- matrix(nrow=iter, ncol=n.year*sum(model.data$avail!="none")) 
+    colnames(p.stor) <- apply(expand.grid(d.yrs, as.character(model.data[model.data$avail!="none",site.name])),1,paste,collapse=":")
     if(use.alpha){
-      phi.stor <- matrix(nrow=iter, ncol=sum(model.data$zero.infl=="RW"))
-      colnames(phi.stor) <- as.character(model.data[model.data$zero.infl=="RW", site.name])
+      phi.stor <- matrix(nrow=iter, ncol=sum(model.data$avail=="RW"))
+      colnames(phi.stor) <- as.character(model.data[model.data$avail=="RW", site.name])
     }
   }
   #tau and zeta
@@ -735,13 +735,13 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
     gamma=mcmc(g.stor)
   }
   else gamma=NULL
-  if(use.zi) prob.zero.infl <- mcmc(p.stor)
-  else  prob.zero.infl <- NULL
+  if(use.zi) prob.avail <- mcmc(p.stor)
+  else  prob.avail <- NULL
   mcmc.sample <- list(pred.trend=mcmc(ag.pred.trend.stor), trend=mcmc(ag.trend.stor), 
                       aggregated.pred.abund=mcmc(ag.pred.abund.stor), aggregated.rel.abund=mcmc(ag.abund.stor),
                       pred.site.abund=pred.site.abund, rel.site.abund=rel.site.abund,
                       site.param=site.param, gamma=gamma,
-                      prob.zero.infl=prob.zero.infl)
+                      prob.avail=prob.avail)
   summ.dat1 <- expand.grid(d.yrs, levels(ag.data[,2]))
   summ.dat1 <- summ.dat1[summ.dat1[,1]>=start & summ.dat1[,1]<=end,]
   summ.dat3 <- summ.dat1

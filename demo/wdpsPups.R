@@ -26,9 +26,9 @@ wdpsModels$trend <- cut(nz.counts[,2], c(0,5,10,30), labels=c("const","lin","RW"
 #   0-5 surveys = constant inflation effect
 #   >5 surveys = linear inflation effect
 #   All surveys have nonzero counts = no ZI model
-wdpsModels$zero.infl <- cut(nz.counts[,2], c(0,5,30), labels=c("const","lin"))
-levels(wdpsModels$zero.infl) <- c(levels(wdpsModels$zero.infl), "none")
-wdpsModels$zero.infl[nz.counts[,2]==num.surv[,2]] <- "none"
+wdpsModels$avail <- cut(nz.counts[,2], c(0,5,30), labels=c("const","lin"))
+levels(wdpsModels$avail) <- c(levels(wdpsModels$avail), "none")
+wdpsModels$avail[nz.counts[,2]==num.surv[,2]] <- "none"
 
 head(wdpsModels)
 
@@ -78,32 +78,77 @@ fitdat$trend2000[fitdat$year<2000] <- NA
 
 ## Make a plot of the results (requires ggplot2 package)
 library(ggplot2)
-wdpsfig <- ggplot(fitdat, aes(x=year, y=post.median.abund)) +
-  geom_line(aes(y=post.median.abund)) +
-  geom_ribbon(aes(ymin=low90.hpd, ymax=hi90.hpd), alpha=0.15) +
-  geom_line(aes(y=trend2000),lwd=3, data=fitdat[fitdat$year>=2000,], color="blue") + 
-  xlab("Year") + ylab("WDPS estimated pup production")
+
+envCol = "#2b83ba"
+lnCol = "#d7191c"
 
 
-## A Look at MARMOT in the C ALEU
+
+surv.yrs <- unique(fit$original.data$year)
+ag.sum.data <- fit$aggregation.pred.summary
+rel.dat <- fit$aggregation.rel.summary
+rel.dat <- rel.dat[rel.dat$year %in% surv.yrs,]
+colnames(rel.dat)[3:5] <- paste(colnames(rel.dat)[3:5], "REL", sep="")
+ag.sum.data <- merge(ag.sum.data, rel.dat, all=TRUE)
+ag.nm <- "Region"
+ag.sum.data[,ag.nm] <- factor(ag.sum.data[,ag.nm])
+b <- apply(trend2000, 2, median)
+X <- model.matrix(~(ag.sum.data[,ag.nm]-1) + (ag.sum.data[,ag.nm]-1):(year), data=ag.sum.data)
+ag.sum.data$trend2000 <- apply(apply(as.matrix(trend2000), 1, FUN=function(b,Mat){as.vector(exp(Mat%*%b))}, Mat=X), 1, median)
+ag.sum.data$trend2000[ag.sum.data$year<2000] <- NA
+ag.sum.data$Region = factor(ag.sum.data$Region, 
+                            levels=c("W ALEU", "C ALEU", "E ALEU", "W GULF", "C GULF", "E GULF"))
+fig1 <- ggplot(ag.sum.data, aes(x=year, y=post.median.abund)) + 
+  geom_line() + 
+  geom_ribbon(aes(ymin=low90.hpd, ymax=hi90.hpd), alpha=0.4, fill=envCol) + 
+  geom_line(aes(y=trend2000), color=lnCol, lwd=1.5) + 
+  geom_pointrange(aes(y=post.median.abundREL, ymin=low90.hpdREL, ymax=hi90.hpdREL)) + 
+  facet_wrap(~Region, ncol=2) +
+  xlab("\nYear") + ylab("Aggregated count\n") + 
+  theme_bw() + theme(panel.grid=element_blank(), text=element_text(size=14)) 
+
+print(fig1)
+#ggsave(fig1, file="figure/figure1.pdf", width=6.5, height=8)
+
+suppressMessages(library(gridExtra))
+
 site.pred <- fit$mcmc.sample$pred.site.abund
-yr.site <- expand.grid(c(1990:2012), levels(wdpsPups$site))
+yr.site <- expand.grid(c(1990:2012), levels(wdpsNonpups$site))
 colnames(yr.site) <- c("year","site")
 yr.site <- merge(yr.site, wdpsModels, by="site")
+
+# GLACIER in the E GULF
+glacier.pred <- mcmc(site.pred[,yr.site$site=="GLACIER"])
+glacier.dat <- fit$original.data[fit$original.data$site=="GLACIER",]
+glacier.plot <- ggplot() + 
+  geom_ribbon(aes(ymin=lower, ymax=upper, x=c(1990:2012)), data=data.frame(HPDinterval(glacier.pred)), alpha=0.4, fill=envCol) +
+  geom_ribbon(aes(ymin=lower, ymax=upper, x=c(1990:2012)), data=data.frame(HPDinterval(glacier.pred, 0.5)), alpha=0.4, fill=envCol) +
+  geom_line(aes(x=c(1990:2012), y=apply(glacier.pred, 2, median))) +
+  geom_point(aes(y=count, x=year), data=glacier.dat, size=3) +
+  xlab("Year") + ylab("Survey count") + ggtitle("(a) Counts at Glacier\n") +
+  theme_bw() + theme(panel.grid=element_blank(), text=element_text(size=12), plot.title=element_text(size=12))
+
+# Zero inflation process for GLACIER
+glacierAV <- mcmc(fit$mcmc.sample$prob.zero.infl[,yr.site$site[yr.site$zero.infl!="none"]=="GLACIER"])
+glacier.av <- ggplot() + 
+  geom_ribbon(aes(ymin=lower, ymax=upper, x=c(1990:2012)), data=data.frame(HPDinterval(glacierAV)), alpha=0.4, fill=envCol) +
+  geom_ribbon(aes(ymin=lower, ymax=upper, x=c(1990:2012)), data=data.frame(HPDinterval(glacierAV, 0.5)), alpha=0.4, fill=envCol) +
+  geom_line(aes(x=c(1990:2012), y=apply(glacierAV, 2, median))) +
+  geom_point(aes(y=1.0*c(glacier.dat$count>0), x=year), data=glacier.dat, size=3) +
+  xlab("Year") + ylab("Probability survey count > 0") + ggtitle("(b) Availability at Glacier\n") +
+  theme_bw() + theme(panel.grid=element_blank(), text=element_text(size=12), plot.title=element_text(size=12))
+
+# MARMOT in the C ALEU
 marmot.pred <- mcmc(site.pred[,yr.site$site=="MARMOT"])
 marmot.dat <- fit$original.data[fit$original.data$site=="MARMOT",]
-marmot.abund <- ggplot() + 
+marmot.plot <- ggplot() + 
+  geom_ribbon(aes(ymin=lower, ymax=upper, x=c(1990:2012)), data=data.frame(HPDinterval(marmot.pred)), alpha=0.4, fill=envCol) +
+  geom_ribbon(aes(ymin=lower, ymax=upper, x=c(1990:2012)), data=data.frame(HPDinterval(marmot.pred, 0.5)), alpha=0.4, fill=envCol) +
   geom_line(aes(x=c(1990:2012), y=apply(marmot.pred, 2, median))) +
-  geom_ribbon(aes(ymin=lower, ymax=upper, x=c(1990:2012)), data=data.frame(HPDinterval(marmot.pred)), alpha=0.25) +
-  geom_ribbon(aes(ymin=lower, ymax=upper, x=c(1990:2012)), data=data.frame(HPDinterval(marmot.pred, 0.5)), alpha=0.25) +
   geom_point(aes(y=count, x=year), data=marmot.dat, size=3) +
-  xlab("Year") + ylab("Abundance")
+  xlab("Year") + ylab("Survey count") + ggtitle("(c) Counts at Marmot\n") + 
+  theme_bw() + theme(panel.grid=element_blank(), text=element_text(size=12), plot.title=element_text(size=12))
 
-# Print the figs.-- Uncomment to create PDFs
-print(wdpsfig)
-print(marmot.abund)
-# ggsave("wdpstrends_pup.pdf", wdpsfig)
-# ggsave("marmotPred_pup.pdf", marmot.abund)
-
-# Save the results-- uncomment to save
-## save(fit, file="wdpsPupsDemoResults.RData", compress=TRUE)
+fig2 <- arrangeGrob(glacier.plot, glacier.av, marmot.plot, ncol=2)
+print(fig2)
+#ggsave(xxx, file="figure/figure2.pdf", width=6.5, height=6.5)

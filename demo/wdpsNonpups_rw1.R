@@ -30,9 +30,9 @@ wdpsModels$trend <- cut(nz.counts[,2], c(0,5,10,30), labels=c("const","lin","RW"
 #   0-5 surveys = constant inflation effect
 #   >5 surveys = linear inflation effect
 #   All surveys have nonzero counts = no ZI model
-wdpsModels$zero.infl <- cut(nz.counts[,2], c(0,5,30), labels=c("const","lin"))
-levels(wdpsModels$zero.infl) <- c(levels(wdpsModels$zero.infl), "none")
-wdpsModels$zero.infl[nz.counts[,2]==num.surv[,2]] <- "none"
+wdpsModels$avail <- cut(nz.counts[,2], c(0,5,30), labels=c("const","lin"))
+levels(wdpsModels$avail) <- c(levels(wdpsModels$avail), "none")
+wdpsModels$avail[nz.counts[,2]==num.surv[,2]] <- "none"
 
 head(wdpsModels)
 
@@ -127,7 +127,7 @@ glacier.plot <- ggplot() +
   xlab("Year") + ylab("Abundance")
 
 # Zero inflation process for GLACIER
-glacierZI <- mcmc(fit$mcmc.sample$prob.zero.infl[,yr.site$site[yr.site$zero.infl!="none"]=="GLACIER"])
+glacierZI <- mcmc(fit$mcmc.sample$prob.avail[,yr.site$site[yr.site$avail!="none"]=="GLACIER"])
 glacier.zi <- ggplot() + 
   geom_line(aes(x=c(1990:2012), y=apply(glacierZI, 2, median))) +
   geom_ribbon(aes(ymin=lower, ymax=upper, x=c(1990:2012)), data=data.frame(HPDinterval(glacierZI)), alpha=0.25) +

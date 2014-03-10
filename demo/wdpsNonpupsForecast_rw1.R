@@ -30,9 +30,9 @@ wdpsModels$trend <- cut(nz.counts[,2], c(0,5,10,30), labels=c("const","lin","RW"
 #   0-5 surveys = constant inflation effect
 #   >5 surveys = linear inflation effect
 #   All surveys have nonzero counts = no ZI model
-wdpsModels$zero.infl <- cut(nz.counts[,2], c(0,5,30), labels=c("const","lin"))
-levels(wdpsModels$zero.infl) <- c(levels(wdpsModels$zero.infl), "none")
-wdpsModels$zero.infl[nz.counts[,2]==num.surv[,2]] <- "none"
+wdpsModels$avail <- cut(nz.counts[,2], c(0,5,30), labels=c("const","lin"))
+levels(wdpsModels$avail) <- c(levels(wdpsModels$avail), "none")
+wdpsModels$avail[nz.counts[,2]==num.surv[,2]] <- "none"
 
 head(wdpsModels)
 
