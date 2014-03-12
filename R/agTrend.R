@@ -289,14 +289,17 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   use.trunc <- !is.null(model.data$avail) | (any(upper!=Inf) | any(lower!=-Inf))
   #if(use.trunc) require(truncnorm)
   use.zi <- !is.null(model.data$avail)
-  if(use.zi) use.zi <- any(model.data$avail!="none")
-  if(use.zi) use.alpha <- any(model.data$avail=="RW")
-  else use.alpha <- FALSE
+  if(use.zi){
+    use.zi <- any(model.data$avail!="none")
+  }
+  if(use.zi) {
+    use.alpha <- any(model.data$avail=="RW")
+  } else use.alpha <- FALSE
   use.gam <- !is.null(obs.formula)
   use.eta <- any(model.data$trend=="RW")
 
   if(use.zi & !all(model.data$avail%in%c("none","const","lin","RW"))){
-    stop("\n Error: currently the only models for zero-inflation are: 'none', 'const', 'lin', or 'RW'\n")
+    stop("\n Error: currently the only models for availability are: 'none', 'const', 'lin', or 'RW'\n")
   }
   if(!all(model.data$trend%in%c("const","lin","RW"))){
     stop("\n Error: currently the only models for trend are: 'const', 'lin', or 'RW'\n")
@@ -519,7 +522,7 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   #beta
   b <- inits$b
   Qbb0 <- Qb%*%b
-  muz <- Xz %*% b
+  muz <- suppressMessages(Xz %*% b)
   #tau and eta
   tau <- inits$tau
   Tau <- Diagonal(x=rep(tau, each=n.year))

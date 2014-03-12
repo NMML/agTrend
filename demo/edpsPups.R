@@ -48,8 +48,8 @@ trend.mcmc = exp(fit$mcmc.sample$pred.trend[,2])-1
 dd <- density(trend.mcmc)
 trend.mode = dd$x[dd$y==max(dd$y)]
 trend.HPD = HPDinterval(trend.mcmc, 0.95)
-cat(paste("\nTrend estimate:", round(trend.mode,3), 
-          "(", round(trend.HPD[,1],3),",",round(trend.HPD[,2],3),")","\n"))
+cat(paste("\nTrend estimate:", 100*round(trend.mode,3), 
+          "(", 100*round(trend.HPD[,1],3),",",100*round(trend.HPD[,2],3),")","\n"))
 
 # Save the results-- uncomment to save
 # save(fit, file="edpsPupsDemoResults.rda", compress=TRUE)
