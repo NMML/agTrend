@@ -126,10 +126,10 @@ iar.Q <- function(n,p)
 }
 
 getSiteREInits <- function(data, abund.name, site.name, time.name, ln.adj, 
-                           Q0.eta.s, r0.eta.s, a.tau, b.tau, newdata, model.data){
+                           Q0.omega.s, r0.omega.s, a.tau, b.tau, newdata, model.data){
   #require(mgcv)
   data$y <- log(data[,abund.name]+ln.adj)
-  eta <- NULL
+  omega <- NULL
   tau <- NULL
   zeta <- NULL
   b <- NULL
@@ -139,25 +139,25 @@ getSiteREInits <- function(data, abund.name, site.name, time.name, ln.adj,
     if(models$trend%in%c("const","lin")){
       if(models$trend=="const") fit <- lm(data[data[,site.name]==i,"y"]~1, )
       else fit <- lm(data[data[,site.name]==i,"y"]~data[data[,site.name]==i,time.name])
-      eta <- c(eta, rep(0,nrow(newdata)))
+      omega <- c(omega, rep(0,nrow(newdata)))
       b <- c(b, as.vector(coef(fit)))
       zeta <- c(zeta, 1/var(residuals(fit)))
     }
     else{
       form <- as.formula(paste("y ~ s(", time.name,")", sep=""))
       fit <- gam(form, data=data, subset=(data[,site.name]==i))
-      eta.tmp <- predict(fit, newdata=newdata)
-      lm.fit <- lm(eta.tmp~newdata[,1])
-      eta.tmp <- matrix(residuals(lm.fit), ncol=1)
-      tau <- c(tau, (a.tau+r0.eta.s/2 -1)/(b.tau + as.vector(crossprod(eta.tmp, Q0.eta.s)%*%eta.tmp)/2))
-      eta <- c(eta, eta.tmp)
+      omega.tmp <- predict(fit, newdata=newdata)
+      lm.fit <- lm(omega.tmp~newdata[,1])
+      omega.tmp <- matrix(residuals(lm.fit), ncol=1)
+      tau <- c(tau, (a.tau+r0.omega.s/2 -1)/(b.tau + as.vector(crossprod(omega.tmp, Q0.omega.s)%*%omega.tmp)/2))
+      omega <- c(omega, omega.tmp)
       b <- c(b, as.vector(coef(lm.fit)))
       zeta <- c(zeta, 1/var(residuals(fit)))
     }
     num <- num+1
   }
   zeta <- ifelse(zeta==Inf, max(zeta[zeta<Inf]), zeta)
-  return(list(eta=eta, zeta=zeta, tau=tau, b=b))
+  return(list(omega=omega, zeta=zeta, tau=tau, b=b))
 }
 
 getSiteZIInits <- function(data.orig, abund.name, site.name, time.name,
@@ -205,7 +205,7 @@ getSiteZIInits <- function(data.orig, abund.name, site.name, time.name,
 #' @param obs.formula  A formula object specifying the model for the observation data
 #' @param aggregation  A factor variable. Aggregation is performed over each level of the factor.
 #' @param model.data  A data frame giving the augmentation model for each site. See 'Details'
-#' @param rw.order A names list, e.g., \code{list(eta=2, alpha=2)}, that gives the order of the RW process for the trend and ZI models.
+#' @param rw.order A names list, e.g., \code{list(omega=2, alpha=2)}, that gives the order of the RW process for the trend and ZI models.
 #' @param abund.name  A character string giving the name of the data to be aggregated
 #' @param time.name  A character string giving the name of the time variable
 #' @param site.name  A character string giving the name of the site variable. The variable should be a factor
@@ -228,9 +228,9 @@ getSiteZIInits <- function(data.orig, abund.name, site.name, time.name,
 #' MCMC sampling of the posterior predictive distribution of the abundance at 
 #' each site at each time, \eqn{N_{st}}{N_st}. The abundance at each site is 
 #' modeled, in its most general form, with a zero-inflated, nonparameteric model,
-#' \deqn{z_{st} = \beta_{s0} + \beta_{s1}t + \eta_{st} + \delta_{st} \mbox{ if } N_{st}>0,}{z_st = beta_s0 + beta_s1 * t + eta_st + delta_st if N_st > 0,}
+#' \deqn{z_{st} = \beta_{s0} + \beta_{s1}t + \omega_{st} + \delta_{st} \mbox{ if } N_{st}>0,}{z_st = beta_s0 + beta_s1 * t + omega_st + delta_st if N_st > 0,}
 #' where \eqn{\beta_{s0}+\beta_{s1}t}{beta_s0 + beta_s1 * t} is the linear 
-#' trend, \eqn{\eta}{eta} is a random walk (of order 1 or 2) (RW), and \eqn{\delta_{st}}{delta_st} is an iid normal error variable. The zero-inflation part is added via 
+#' trend, \eqn{\omega}{omega} is a random walk (of order 1 or 2) (RW), and \eqn{\delta_{st}}{delta_st} is an iid normal error variable. The zero-inflation part is added via 
 #' the probit regression model
 #' \deqn{\mbox{probit}\{P(N_{st}>0)\} = \theta_{s0} + \theta_{s1}t + \alpha_{st},}{probit{P(N_st > 0)} = theta_s0 + theta_s1 * t + alpha_st,}
 #' where \eqn{\theta_{s0}}{theta_s0} and \eqn{\theta_{s1}}{theta_s1} are linear regression coefficients and \eqn{\alpha}{alpha} is a RW model.
@@ -296,7 +296,7 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
     use.alpha <- any(model.data$avail=="RW")
   } else use.alpha <- FALSE
   use.gam <- !is.null(obs.formula)
-  use.eta <- any(model.data$trend=="RW")
+  use.omega <- any(model.data$trend=="RW")
 
   if(use.zi & !all(model.data$avail%in%c("none","const","lin","RW"))){
     stop("\n Error: currently the only models for availability are: 'none', 'const', 'lin', or 'RW'\n")
@@ -311,9 +311,9 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   #(Note: Normals are parameterized with precision matrices)
   # y = Xy %*% gamma + M %*% z + eps
   # eps ~ N(0,Qy), Qy is known
-  # Z = Xz %*% beta + eta + delta
+  # Z = Xz %*% beta + omega + delta
   # delta ~ N(0,Qdelta), Qdelta is diagonal with elements zeta
-  # eta ~ N(0, Qeta); Qeta is a block diagonal RW(p) model with precision tau
+  # omega ~ N(0, Qomega); Qomega is a block diagonal RW(p) model with precision tau
   
   # DATA MANIPULATION / PREPARATION ###
   if(use.zi) ln.adj <- 0
@@ -348,10 +348,10 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   # upper and lower bounds
   if(is.data.frame(upper)) upper <- log(merge(data.frame(site.idx), upper, by.y=site.name, by.x=1)$upper + ln.adj)
   if(is.data.frame(lower)) lower <- log(merge(data.frame(site.idx), lower, by.y=site.name, by.x=1)$lower + ln.adj)
-  # eta
-  if(use.eta){
-    etarw.data <- merge(data.frame(site.idx), model.data, by.y=site.name, by.x=1)
-    etarw <- c(etarw.data$trend=="RW")
+  # omega
+  if(use.omega){
+    omegarw.data <- merge(data.frame(site.idx), model.data, by.y=site.name, by.x=1)
+    omegarw <- c(omegarw.data$trend=="RW")
   }
   # alpha and fixed q
   q.data <- merge(data.frame(site.idx), model.data, by.y=site.name, by.x=1)
@@ -385,12 +385,12 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
                       if(x=="const"){return(matrix(rep(1,n.year), ncol=1))}
                       else return(cbind(rep(1,n.year),d.yrs))                         
                      }))
-  # create constraint matrix for eta
-  if(!is.null(rw.order$eta)){
-    eta.order=rw.order$eta
-  } else{eta.order=1}
-  if(use.eta){
-    if(eta.order==2){
+  # create constraint matrix for omega
+  if(!is.null(rw.order$omega)){
+    omega.order=rw.order$omega
+  } else{omega.order=1}
+  if(use.omega){
+    if(omega.order==2){
     Xz.rw <- .bdiag(lapply(model.data$trend[model.data$trend=="RW"], 
                             function(x){
                               if(x=="const"){return(matrix(rep(1,n.year), ncol=1))}
@@ -420,12 +420,12 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   if(!missing(sig.abund)) {
     Qeps <- Diagonal(x=1/log(1+(data[,sig.abund]/data[,abund.name])^2))
   } else {Qeps <- Diagonal(x=rep(1.0E8, length(y)))}
-  # Precision for eta and alpha
-  Q0.eta.s <- Matrix(iar.Q(n.year, eta.order))
+  # Precision for omega and alpha
+  Q0.omega.s <- Matrix(iar.Q(n.year, omega.order))
   Q0.alpha.s <- Matrix(iar.Q(n.year, alpha.order))
-  r0.eta.s <- dim(Q0.eta.s)[1] - eta.order
+  r0.omega.s <- dim(Q0.omega.s)[1] - omega.order
   r0.alpha.s <- dim(Q0.alpha.s)[1] - alpha.order
-  if(use.eta) suppressMessages(Qeta.0 <- kronecker(Diagonal(sum(model.data$trend=="RW")), Q0.eta.s))
+  if(use.omega) suppressMessages(Qomega.0 <- kronecker(Diagonal(sum(model.data$trend=="RW")), Q0.omega.s))
   if(use.alpha) suppressMessages(Qalpha.0 <- kronecker(Diagonal(sum(model.data$avail=="RW")), Q0.alpha.s))
   
   # PRIORS ###
@@ -517,17 +517,19 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
     z.01.tilde <- rtruncnorm(Nzi, a=a.zi[qzi], b=b.zi[qzi], mean=q, sd=1)
   }
   inits <- getSiteREInits(data, abund.name, site.name, time.name, 
-                          ln.adj, Q0.eta.s, r0.eta.s, a.tau, b.tau, newdata, model.data)
+                          ln.adj, Q0.omega.s, r0.omega.s, a.tau, b.tau, newdata, model.data)
   
   #beta
   b <- inits$b
   Qbb0 <- Qb%*%b
   muz <- suppressMessages(Xz %*% b)
-  #tau and eta
-  tau <- inits$tau
-  Tau <- Diagonal(x=rep(tau, each=n.year))
-  Qeta <- suppressMessages(Tau %*% Qeta.0)
-  eta <- inits$eta
+  #tau and omega
+  if(use.omega){
+    tau <- inits$tau
+    Tau <- Diagonal(x=rep(tau, each=n.year))
+    Qomega <- suppressMessages(Tau %*% Qomega.0)
+  }
+  omega <- inits$omega
   #Qdelta and zeta
   zeta <- inits$zeta
   Qdelta <-  Diagonal(x=rep(zeta, each=n.year))
@@ -535,9 +537,9 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   MQepsM <- crossprod(M,Qeps) %*% M
   MQeps <- crossprod(M,Qeps)
   D.z <- MQepsM + Qdelta
-  d.z<- MQeps%*%(y-Xyg) + Qdelta%*%(muz + eta)
+  d.z<- MQeps%*%(y-Xyg) + Qdelta%*%(muz + omega)
   z <- as.vector(solve(D.z, d.z))
-  z.pred <- as.vector(muz + eta + rnorm(bigN, 0, 1/sqrt(Qdelta@x)))
+  z.pred <- as.vector(muz + omega + rnorm(bigN, 0, 1/sqrt(Qdelta@x)))
   #aggregation
   ag.df <- expand.grid(yrs, levels(ag.data[,aggregation]))
   if(length(unique(ag.data[,aggregation]))>1) ag.mm <- model.matrix(~(ag.df[,2]+0) + (ag.df[,1]:ag.df[,2]+0))
@@ -588,8 +590,10 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   }
   #tau and zeta
   if(keep.site.param){
-    tau.stor <- matrix(nrow=iter, ncol=sum(model.data$trend=="RW"))
-    colnames(tau.stor) <- as.character(model.data[model.data$trend=="RW", site.name])
+    if(use.omega){
+      tau.stor = matrix(nrow=iter, ncol=sum(model.data$trend=="RW"))
+      colnames(tau.stor) <- as.character(model.data[model.data$trend=="RW", site.name])
+    }
     zeta.stor <- matrix(nrow=iter, ncol=n.site)
     colnames(zeta.stor) <- as.character(levels(data.orig[,site.name]))
   }
@@ -600,7 +604,7 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
     
     #update z
     D.z <- MQepsM + Qdelta
-    d.z<- MQeps%*%(y-Xyg) + Qdelta%*%(muz + eta)
+    d.z<- MQeps%*%(y-Xyg) + Qdelta%*%(muz + omega)
     if(!use.trunc){
       z <- as.vector(solve(D.z, d.z) + solve(chol(D.z), rnorm(bigN,0,1)))
     } else {
@@ -638,25 +642,27 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   
     #update beta
     D.b <- suppressMessages(crossprod(Xz, Qdelta) %*% Xz + Qb)
-    d.b <- crossprod(Xz,Qdelta)%*%(z-eta) + Qbb0
+    d.b <- crossprod(Xz,Qdelta)%*%(z-omega) + Qbb0
     b <- solve(D.b,d.b) + solve(chol(D.b), rnorm(ncol(Xz),0,1))
     muz <- Xz%*%b
     
-    #update eta
-    D.eta <- Qdelta[etarw,etarw] + Qeta
-    d.eta <- Qdelta[etarw,etarw]%*%(z[etarw]-muz[etarw])
-    eta[etarw] <- as.vector(solve(D.eta,d.eta) + solve(chol(D.eta), rnorm(sum(etarw),0,1)))
-    eta[etarw] <- as.vector(eta[etarw] - (D.eta%*%t(A)) %*% solve(A%*%D.eta%*%t(A)) %*% (A%*%eta[etarw]))
-    
-    #update tau
-    b1.tau <- b.tau + aggregate(as.vector(eta[etarw]), list(site.idx[etarw]), FUN=function(x,Q0.s){crossprod(x, Q0.s)%*%x}, Q0.s=as.matrix(Q0.eta.s))$x/2
-    a1.tau <- a.tau + r0.eta.s/2
-    tau <- rgamma(sum(model.data$trend=="RW"), a1.tau, b1.tau)
-    Tau <- Diagonal(x=rep(tau, each=n.year))
-    Qeta <- Tau %*% Qeta.0
+    if(use.omega){
+      #update omega
+      D.omega <- Qdelta[omegarw,omegarw] + Qomega
+      d.omega <- Qdelta[omegarw,omegarw]%*%(z[omegarw]-muz[omegarw])
+      omega[omegarw] <- as.vector(solve(D.omega,d.omega) + solve(chol(D.omega), rnorm(sum(omegarw),0,1)))
+      omega[omegarw] <- as.vector(omega[omegarw] - (D.omega%*%t(A)) %*% solve(A%*%D.omega%*%t(A)) %*% (A%*%omega[omegarw]))
+      
+      #update tau
+      b1.tau <- b.tau + aggregate(as.vector(omega[omegarw]), list(site.idx[omegarw]), FUN=function(x,Q0.s){crossprod(x, Q0.s)%*%x}, Q0.s=as.matrix(Q0.omega.s))$x/2
+      a1.tau <- a.tau + r0.omega.s/2
+      tau <- rgamma(sum(model.data$trend=="RW"), a1.tau, b1.tau)
+      Tau <- Diagonal(x=rep(tau, each=n.year))
+      Qomega <- Tau %*% Qomega.0
+    }
     
     #update zeta
-    res.z2 <- as.vector((z-muz-eta)^2)
+    res.z2 <- as.vector((z-muz-omega)^2)
     b1.zeta <- b.zeta + aggregate(res.z2, list(site.idx), FUN=sum)$x/2
     a1.zeta <- a.zeta + n.year/2
     zeta <- rgamma(n.site, a1.zeta, b1.zeta)
@@ -673,8 +679,8 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
     
     #posterior predictive trend
     if(!use.trunc) {
-      z.pred <- as.vector(muz + eta + rnorm(bigN, 0, 1/sqrt(Qdelta@x)))
-    } else z.pred <- rtruncnorm(bigN, a=lower, b=upper, mean=as.vector(muz+eta), sd=1/sqrt(Qdelta@x))
+      z.pred <- as.vector(muz + omega + rnorm(bigN, 0, 1/sqrt(Qdelta@x)))
+    } else z.pred <- rtruncnorm(bigN, a=lower, b=upper, mean=as.vector(muz+omega), sd=1/sqrt(Qdelta@x))
     N.pred <- exp(z.pred)-ln.adj
     if(use.zi){
       if(incl.zeros) N.pred[qzi] <- ifelse(rnorm(sum(qzi), mean=q, sd=1)>0,1,0)*N.pred[qzi]
@@ -697,7 +703,7 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
         }
         if(keep.site.param){
           b.stor[j,] <- as.vector(b)
-          tau.stor[j,] <- tau
+          if(use.omega) tau.stor[j,] <- tau
           zeta.stor[j,] <- zeta
         }
         if(keep.obs.param & use.gam) g.stor[j,] <- as.numeric(g)
@@ -729,10 +735,11 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   if(keep.site.param){
     site.param=list(
       beta=mcmc(b.stor),
-      tau=mcmc(tau.stor),
       zeta=mcmc(zeta.stor)
     )
+    if(use.omega) site.param = append(site.param, list(tau=mcmc(tau.stor)))
   }
+
   else site.param=NULL
   if(keep.obs.param & use.gam){
     gamma=mcmc(g.stor)

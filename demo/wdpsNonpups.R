@@ -1,20 +1,24 @@
-library(agTrend)
-data(wdpsPups)
+data(wdpsNonpups)
+data(photoCorrection)
 
 ### Subset data to post-1989
-wdpsPups <- wdpsPups[wdpsPups$year>=1990 , ]
-wdpsPups <- droplevels(wdpsPups)
+wdpsNonpups <- wdpsNonpups[wdpsNonpups$year>=1990 , ]
+wdpsNonpups <- droplevels(wdpsNonpups)
 
 ### Remove sites that had only 1 positive count
-nz.counts <- aggregate(wdpsPups$count[wdpsPups$count>0], by=list(wdpsPups$site[wdpsPups$count>0]), FUN=length)
-wdpsPups <- wdpsPups[wdpsPups$site%in%as.character(nz.counts[nz.counts[,2]>1,1]),]
-wdpsPups <- droplevels(wdpsPups)
+nz.counts <- aggregate(wdpsNonpups$count[wdpsNonpups$count>0], by=list(wdpsNonpups$site[wdpsNonpups$count>0]), FUN=length)
+wdpsNonpups <- wdpsNonpups[wdpsNonpups$site%in%as.character(nz.counts[nz.counts[,2]>1,1]),]
+wdpsNonpups <- droplevels(wdpsNonpups)
 
-### Create prediction and zero-inflation (ZI) models for each site 
+### Add photo method covariate to data (oblique photos prior to 2004 surveys = 1)
+wdpsNonpups$obl <- as.numeric(wdpsNonpups$year<2004)
+
+
+### Create prediction and availability models for each site 
 # Count number of surveys
-num.surv <- aggregate(wdpsPups$count, by=list(wdpsPups$site), FUN=length)
+num.surv <- aggregate(wdpsNonpups$count, by=list(wdpsNonpups$site), FUN=length)
 # Count number of surveys with non-zero counts
-nz.counts <- aggregate(wdpsPups$count[wdpsPups$count>0], by=list(wdpsPups$site[wdpsPups$count>0]), FUN=length)
+nz.counts <- aggregate(wdpsNonpups$count[wdpsNonpups$count>0], by=list(wdpsNonpups$site[wdpsNonpups$count>0]), FUN=length)
 # Set up model data.frame for 'mcmc.aggregate(...)' function
 wdpsModels <- data.frame(site=num.surv[,1])
 # Trend models:
@@ -25,7 +29,7 @@ wdpsModels$trend <- cut(nz.counts[,2], c(0,5,10,30), labels=c("const","lin","RW"
 # Zero inflation models:
 #   0-5 surveys = constant inflation effect
 #   >5 surveys = linear inflation effect
-#   All surveys have nonzero counts = no ZI model
+#   All surveys have nonzero counts = no availability model
 wdpsModels$avail <- cut(nz.counts[,2], c(0,5,30), labels=c("const","lin"))
 levels(wdpsModels$avail) <- c(levels(wdpsModels$avail), "none")
 wdpsModels$avail[nz.counts[,2]==num.surv[,2]] <- "none"
@@ -36,47 +40,54 @@ head(wdpsModels)
 ### Create prior distribution list for MCMC site updating 
 ### Assumes site trends unlikely to be greater than 20% or less that about -17%
 ### or, more exactly Pr{exp(-ln(1+0.2))-1 < trend < 0.2} = 0.95
+# Create informative gamma prior
+x = log(photoCorrection$X2000OBL/photoCorrection$X2000VERT)
+gamma.0 = mean(x)
+gamma.se = sd(x)/sqrt(nrow(photoCorrection))
 
-prior.list=defaultPriorList(trend.limit=0.2, model.data=wdpsModels)
+prior.list=defaultPriorList(trend.limit=0.2, model.data=wdpsModels,
+                            gamma.mean=gamma.0, gamma.prec=1/gamma.se^2)
 
 ### Create upper bounds for predictive counts (= 3 x max(count) = 1.2^6)
-upper <- aggregate(wdpsPups$count, list(wdpsPups$site), function(x){3*max(x)})
+upper <- aggregate(wdpsNonpups$count, list(wdpsNonpups$site), function(x){3*max(x)})
 colnames(upper) <- c("site", "upper")
 
 ### Perform site augmentation and obtain posterior predictive distribution
 ### Note: Only a small number of MCMC iterations are shown here. For a more robust 
 ### analysis change to burn=1000 and iter=5000.
-set.seed(123)
-fit <- mcmc.aggregate(start=1990, end=2012, data=wdpsPups, model.data=wdpsModels, rw.order=list(eta=2),
+set.seed(123) 
+fit <- mcmc.aggregate(start=1990, end=2012, data=wdpsNonpups, obs.formula=~obl-1, model.data=wdpsModels, 
+                      rw.order=list(eta=2), aggregation="Region",
                       abund.name="count", time.name="year", site.name="site", 
-                      burn=10, iter=50, thin=5, prior.list=prior.list, upper=upper, 
+                      burn=50, iter=100, thin=5, prior.list=prior.list, upper=upper, 
                       keep.site.param=TRUE, keep.site.abund=TRUE, keep.obs.param=TRUE)
 
 
-## Look at the results
+### Look at the results
 fitdat <- fit$aggregation.pred.summary
 # Compute trends for just 2000-2012
 trend2000 <- updateTrend(fit, 2000, 2012, "pred")
 # Change to % growth form
-growth2000 <- mcmc(100*(exp(trend2000[,2])-1))
+growth2000 <- mcmc(100*(exp(trend2000[,7:12])-1))
 summary(growth2000)
 # Obtain posterior median % growth and 90% credible interval
 print(
   data.frame(
-    post.median=median(growth2000),
+    post.median=round(apply(growth2000, 2, median),2),
     HPD.90=round(HPDinterval(growth2000, 0.90),2)
   )
 )
-# Add fitted 2000-2012 trendd to aggregation summary
+
+# Add fitted 2000-2012 trend to aggregation summary
 b <- apply(trend2000, 2, median)
-X <- model.matrix(~year, data=fitdat)
+X <- model.matrix(~(Region-1) + (Region-1):(year), data=fitdat)
 fitdat$trend2000 <- apply(
   apply(as.matrix(trend2000), 1, FUN=function(b,Mat){as.vector(exp(Mat%*%b))}, Mat=X), 
   1, median
-  )
+)
 fitdat$trend2000[fitdat$year<2000] <- NA
 
-## Make a plot of the results (requires ggplot2 package)
+# Make a plot of the results (requires ggplot2 package)
 library(ggplot2)
 
 envCol = "#2b83ba"
@@ -99,16 +110,16 @@ ag.sum.data$trend2000[ag.sum.data$year<2000] <- NA
 ag.sum.data$Region = factor(ag.sum.data$Region, 
                             levels=c("W ALEU", "C ALEU", "E ALEU", "W GULF", "C GULF", "E GULF"))
 fig1 <- ggplot(ag.sum.data, aes(x=year, y=post.median.abund)) + 
+  facet_wrap(~Region, ncol=2) +
   geom_line() + 
   geom_ribbon(aes(ymin=low90.hpd, ymax=hi90.hpd), alpha=0.4, fill=envCol) + 
-  geom_line(aes(y=trend2000), color=lnCol, lwd=1.5) + 
-  geom_pointrange(aes(y=post.median.abundREL, ymin=low90.hpdREL, ymax=hi90.hpdREL)) + 
-  facet_wrap(~Region, ncol=2) +
+  geom_line(aes(y=trend2000), color=lnCol, lwd=1.5, data=ag.sum.data[!is.na(ag.sum.data$trend2000),]) + 
+  geom_pointrange(aes(y=post.median.abundREL, ymin=low90.hpdREL, ymax=hi90.hpdREL), data=ag.sum.data[!is.na(ag.sum.data$post.median.abundREL),]) + 
   xlab("\nYear") + ylab("Aggregated count\n") + 
   theme_bw() + theme(panel.grid=element_blank(), text=element_text(size=14)) 
 
 print(fig1)
-#ggsave(fig1, file="figure/figure1.pdf", width=6.5, height=8)
+# ggsave(fig1, file="figure/figure1.pdf", width=6.5, height=8)
 
 suppressMessages(library(gridExtra))
 
@@ -129,7 +140,7 @@ glacier.plot <- ggplot() +
   theme_bw() + theme(panel.grid=element_blank(), text=element_text(size=12), plot.title=element_text(size=12))
 
 # Zero inflation process for GLACIER
-glacierAV <- mcmc(fit$mcmc.sample$prob.zero.infl[,yr.site$site[yr.site$zero.infl!="none"]=="GLACIER"])
+glacierAV <- mcmc(fit$mcmc.sample$prob.avail[,yr.site$site[yr.site$avail!="none"]=="GLACIER"])
 glacier.av <- ggplot() + 
   geom_ribbon(aes(ymin=lower, ymax=upper, x=c(1990:2012)), data=data.frame(HPDinterval(glacierAV)), alpha=0.4, fill=envCol) +
   geom_ribbon(aes(ymin=lower, ymax=upper, x=c(1990:2012)), data=data.frame(HPDinterval(glacierAV, 0.5)), alpha=0.4, fill=envCol) +
@@ -151,4 +162,8 @@ marmot.plot <- ggplot() +
 
 fig2 <- arrangeGrob(glacier.plot, glacier.av, marmot.plot, ncol=2)
 print(fig2)
-#ggsave(xxx, file="figure/figure2.pdf", width=6.5, height=6.5)
+# ggsave(fig2, file="figure/figure2.pdf", width=6.5, height=6.5)
+
+
+# Save the results-- uncomment to save
+# save(list=ls(), file="wdpsNonpupsDemoResults.RData", compress=TRUE)

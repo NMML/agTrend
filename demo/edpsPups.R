@@ -15,11 +15,11 @@ colnames(upper) <- c("region", "upper")
 
 ### Perform site augmentation and obtain posterior predictive distribution
 ### Note: Only a small number of MCMC iterations are shown here. For a more robust 
-### analysis change to burn=1000 and iter=5000.
+### analysis change to burn=5000 and iter=10000.
 set.seed(123)
 fit <- mcmc.aggregate(start=1979, end=2010, data=edpsPups, model.data=edpsModels, rw.order=list(eta=2),
                       abund.name="abund", time.name="year", site.name="region", 
-                      burn=10, iter=50, thin=5, prior.list=prior.list, upper=upper, 
+                      burn=50, iter=100, thin=5, prior.list=prior.list, upper=upper, 
                       keep.site.param=TRUE, keep.site.abund=TRUE, keep.obs.param=TRUE)
 
 # Extract MCMC summaries
@@ -38,7 +38,7 @@ plt <- ggplot(aes(x=year, y=abund, color=region), data=fitdat) +
   xlab("\nYear") + ylab("Estimated SSL abundance (4.5 x pup count)\n") + ggtitle("eDPS 30 Year Trend\n")
 suppressWarnings(print(plt))
 # Uncomment to save figure:
-# ggsave("edpsTotalTrend.pdf", plt)
+# ggsave("figure/edpsTotalTrend.pdf", plt)
 
 # Examine individual site trends
 summary(fit$mcmc.sample$site.param$beta)
@@ -52,5 +52,4 @@ cat(paste("\nTrend estimate:", 100*round(trend.mode,3),
           "(", 100*round(trend.HPD[,1],3),",",100*round(trend.HPD[,2],3),")","\n"))
 
 # Save the results-- uncomment to save
-# save(fit, file="edpsPupsDemoResults.rda", compress=TRUE)
-
+# save(list=ls(), file="edpsPupsDemoResults.rda", compress=TRUE)

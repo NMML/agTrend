@@ -168,10 +168,10 @@ following: \code{c("const","lin","RW")} for a constant
 mean, linear mean, RW model respectively. Each
 generalization includes all previous models, e.g., an RW
 model contains a linear slope and an intercept.}
-\item{\code{zero.infl}- The same as the \code{trend}
-column, except this specifies the model for the
-zero-inflation component and can additionally include
-\code{"none"} if a zero-inflation model is not desired.} }
+\item{\code{avail}- The same as the \code{trend} column,
+except this specifies the model for the zero-inflation
+component and can additionally include \code{"none"} if a
+zero-inflation model is not desired.} }
 
 Examples of this function's use can be seen in the
 \code{demo(package="agTrend")} files.
