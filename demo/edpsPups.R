@@ -17,7 +17,7 @@ colnames(upper) <- c("region", "upper")
 ### Note: Only a small number of MCMC iterations are shown here. For a more robust 
 ### analysis change to burn=5000 and iter=10000.
 set.seed(123)
-fit <- mcmc.aggregate(start=1979, end=2010, data=edpsPups, model.data=edpsModels, rw.order=list(eta=2),
+fit <- mcmc.aggregate(start=1979, end=2010, data=edpsPups, model.data=edpsModels, rw.order=list(omega=2),
                       abund.name="abund", time.name="year", site.name="region", 
                       burn=50, iter=100, thin=5, prior.list=prior.list, upper=upper, 
                       keep.site.param=TRUE, keep.site.abund=TRUE, keep.obs.param=TRUE)

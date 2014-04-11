@@ -26,7 +26,7 @@ mcmc.aggregate(start, end, data, obs.formula = NULL, aggregation, model.data,
   \item{model.data}{A data frame giving the augmentation
   model for each site. See 'Details'}
 
-  \item{rw.order}{A names list, e.g., \code{list(eta=2,
+  \item{rw.order}{A names list, e.g., \code{list(omega=2,
   alpha=2)}, that gives the order of the RW process for the
   trend and ZI models.}
 
@@ -105,16 +105,17 @@ predictive distribution of the abundance at each site at
 each time, \eqn{N_{st}}{N_st}. The abundance at each site
 is modeled, in its most general form, with a zero-inflated,
 nonparameteric model, \deqn{z_{st} = \beta_{s0} +
-\beta_{s1}t + \eta_{st} + \delta_{st} \mbox{ if }
-N_{st}>0,}{z_st = beta_s0 + beta_s1 * t + eta_st + delta_st
-if N_st > 0,} where \eqn{\beta_{s0}+\beta_{s1}t}{beta_s0 +
-beta_s1 * t} is the linear trend, \eqn{\eta}{eta} is a
-random walk (of order 1 or 2) (RW), and
-\eqn{\delta_{st}}{delta_st} is an iid normal error
-variable. The zero-inflation part is added via the probit
-regression model \deqn{\mbox{probit}\{P(N_{st}>0)\} =
-\theta_{s0} + \theta_{s1}t + \alpha_{st},}{probit{P(N_st >
-0)} = theta_s0 + theta_s1 * t + alpha_st,} where
+\beta_{s1}t + \omega_{st} + \delta_{st} \mbox{ if }
+N_{st}>0,}{z_st = beta_s0 + beta_s1 * t + omega_st +
+delta_st if N_st > 0,} where
+\eqn{\beta_{s0}+\beta_{s1}t}{beta_s0 + beta_s1 * t} is the
+linear trend, \eqn{\omega}{omega} is a random walk (of
+order 1 or 2) (RW), and \eqn{\delta_{st}}{delta_st} is an
+iid normal error variable. The zero-inflation part is added
+via the probit regression model
+\deqn{\mbox{probit}\{P(N_{st}>0)\} = \theta_{s0} +
+\theta_{s1}t + \alpha_{st},}{probit{P(N_st > 0)} = theta_s0
++ theta_s1 * t + alpha_st,} where
 \eqn{\theta_{s0}}{theta_s0} and \eqn{\theta_{s1}}{theta_s1}
 are linear regression coefficients and \eqn{\alpha}{alpha}
 is a RW model.

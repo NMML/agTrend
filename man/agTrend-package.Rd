@@ -21,7 +21,7 @@ uncertainty due to sampling the local abundance processes.
 }
 \details{
 \tabular{ll}{ Package: \tab agTrend\cr Type: \tab
-Package\cr Version: \tab 0.17.2\cr Date: \tab 2014-03-12\cr
+Package\cr Version: \tab 0.17.3\cr Date: \tab 2014-04-08\cr
 License: \tab Unlimited\cr LazyLoad: \tab yes\cr }
 }
 \author{
