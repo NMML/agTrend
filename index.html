@@ -1,34 +1,37 @@
 <!DOCTYPE html>
 <html>
+
   <head>
     <meta charset='utf-8'>
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-    <link href='https://fonts.googleapis.com/css?family=Architects+Daughter' rel='stylesheet' type='text/css'>
-    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen" />
-    <link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen" />
-    <link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print" />
+    <meta name="description" content="agTrend : R package for Bayesian inference of aggregated abundance survey trends">
 
-    <!--[if lt IE 9]>
-    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
+    <link rel="stylesheet" type="text/css" media="screen" href="stylesheets/stylesheet.css">
 
-    <title>agTrend by NMML</title>
+    <title>agTrend</title>
   </head>
 
   <body>
-    <header>
-      <div class="inner">
-        <h1>agTrend</h1>
-        <h2>R package for Bayesian inference of aggregated abundance survey trends</h2>
-        <a href="https://github.com/NMML/agTrend" class="button"><small>View project on</small>GitHub</a>
-      </div>
-    </header>
 
-    <div id="content-wrapper">
-      <div class="inner clearfix">
-        <section id="main-content">
-          <h1>
+    <!-- HEADER -->
+    <div id="header_wrap" class="outer">
+        <header class="inner">
+          <a id="forkme_banner" href="https://github.com/NMML/agTrend">View on GitHub</a>
+
+          <h1 id="project_title">agTrend</h1>
+          <h2 id="project_tagline">R package for Bayesian inference of aggregated abundance survey trends</h2>
+
+            <section id="downloads">
+              <a class="zip_download_link" href="https://github.com/NMML/agTrend/zipball/master">Download this project as a .zip file</a>
+              <a class="tar_download_link" href="https://github.com/NMML/agTrend/tarball/master">Download this project as a tar.gz file</a>
+            </section>
+        </header>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main_content_wrap" class="outer">
+      <section id="main_content" class="inner">
+        <h1>
 <a name="welcome-to-agtrend" class="anchor" href="#welcome-to-agtrend"><span class="octicon octicon-link"></span></a>Welcome to agTrend</h1>
 
 <p>This is the home of the R package <em>agTrend</em> for Bayesian inference of trends for aggregated survey data</p>
@@ -45,28 +48,27 @@
 
 <p>If devtools is installed, to install agTrend, open the R console and type</p>
 
-<pre><code>&gt; library(devtools)
-&gt; install_github("agTrend", username="NMML")
+<pre><code>&gt; devtools::install_github("NMML/agTrend")
 </code></pre>
 
 <h3>
 <a name="downloading-a-binary-file" class="anchor" href="#downloading-a-binary-file"><span class="octicon octicon-link"></span></a>Downloading a binary file</h3>
 
-<p>If you are using a Windows or Mac OSX machine, you can also download prebuilt binary files for installation. The Mac OSX version is available <a href="https://github.com/NMML/agTrend/releases/download/v0.17.3/agTrend_0.17.3.tgz">here</a>. The windows version is downloaded <a href="https://github.com/NMML/agTrend/releases/download/v0.17.3/agTrend_0.17.3.zip">here</a>. If you are running a Linux machine, see the following section. <em>Note</em>: make sure your browser does not try to automatically unpack the file (this is the default for Safari, go into preferences to change this feature). </p>
+<p>If you are using a Windows or Mac OSX machine, you can also download prebuilt binary files for installation. The Mac OSX version is available <a href="https://github.com/NMML/agTrend/releases/download/v0.17.5/agTrend_0.17.5.tgz">here</a>. The windows version is downloaded <a href="https://github.com/NMML/agTrend/releases/download/v0.17.5/agTrend_0.17.5.zip">here</a>. If you are running a Linux machine, see the following section. <em>Note</em>: make sure your browser does not try to automatically unpack the file (this is the default for Safari, go into preferences to change this feature). </p>
 
 <p>After you download the file, open R and set the working directory (e.g., using <code>setwd("path/to/download/dir/")</code>). Once this is set, run</p>
 
-<pre><code>&gt; install.packages("agTrend_0.17.3.zip", repos=NULL)
+<pre><code>&gt; install.packages("agTrend_0.17.5.zip", repos=NULL)
 </code></pre>
 
-<p>If you have a mac replace with "agTrend_0.17.3.zip" with "agTrend_0.17.3.tgz".</p>
+<p>If you have a mac replace with "agTrend_0.17.5.zip" with "agTrend_0.17.5.tgz".</p>
 
 <h3>
 <a name="downloading-the-source-file" class="anchor" href="#downloading-the-source-file"><span class="octicon octicon-link"></span></a>Downloading the source file</h3>
 
-<p>Source files for each version can be downloaded <a href="https://github.com/NMML/agTrend/releases/download/v0.17.3/agTrend_0.17.3.tar.gz">here</a>. The desired file can be downloaded and installed in the same way as with the binaries, e.g., </p>
+<p>Source files for each version can be downloaded <a href="https://github.com/NMML/agTrend/releases/download/v0.17.5/agTrend_0.17.5.tar.gz">here</a>. The desired file can be downloaded and installed in the same way as with the binaries, e.g., </p>
 
-<pre><code>&gt; install.packages("agTrend_0.17.3.tar.gz", repos=NULL, type="source")
+<pre><code>&gt; install.packages("agTrend_0.17.5.tar.gz", repos=NULL, type="source")
 </code></pre>
 
 <h3>
@@ -102,13 +104,14 @@
 
 <pre><code>Loading required package: coda
 Loading required package: lattice
+Loading required package: Matrix
 Loading required package: mgcv
 Loading required package: nlme
-This is mgcv 1.7-26. For overview type 'help("mgcv-package")'.
+This is mgcv 1.8-3. For overview type 'help("mgcv-package")'.
 Loading required package: truncnorm
 
 
- agTrend 0.17.3 (2014-04-08) 
+ agTrend 0.17.5 (2014-10-29) 
 
  Type 'demo(package='agTrend')' to see a list of demos for this package.
 
@@ -122,25 +125,18 @@ Loading required package: truncnorm
 </code></pre>
 
 <p>It will throw some errors if the required packages are not installed. Just install these separately using, e.g.,  <code>install.packages("coda")</code>. From here you can run the demos on Steller sea lion trends with, e.g., <code>demo(wdpsNonpups)</code>. </p>
-        </section>
-
-        <aside id="sidebar">
-          <a href="https://github.com/NMML/agTrend/zipball/master" class="button">
-            <small>Download</small>
-            .zip file
-          </a>
-          <a href="https://github.com/NMML/agTrend/tarball/master" class="button">
-            <small>Download</small>
-            .tar.gz file
-          </a>
-
-          <p class="repo-owner"><a href="https://github.com/NMML/agTrend"></a> is maintained by <a href="https://github.com/NMML">NMML</a>.</p>
-
-          <p>This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the Architect theme by <a href="https://twitter.com/jasonlong">Jason Long</a>.</p>
-        </aside>
-      </div>
+      </section>
     </div>
 
-  
+    <!-- FOOTER  -->
+    <div id="footer_wrap" class="outer">
+      <footer class="inner">
+        <p class="copyright">agTrend maintained by <a href="https://github.com/NMML">NMML</a></p>
+        <p>Published with <a href="http://pages.github.com">GitHub Pages</a></p>
+      </footer>
+    </div>
+
+    
+
   </body>
 </html>
