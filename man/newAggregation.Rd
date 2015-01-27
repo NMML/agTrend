@@ -3,7 +3,7 @@
 \alias{newAggregation}
 \title{Recalculate new site aggregations from a previous MCMC aggregation}
 \usage{
-newAggregation(fit, aggregation.data, type = "pred")
+newAggregation(fit, aggregation.data, type = "pred", ci.prob = 0.95)
 }
 \arguments{
 \item{fit}{The output list from a previous call to \code{\link{mcmc.aggregate}}.
@@ -16,6 +16,8 @@ are factor variables defining other site aggregations.}
 
 \item{type}{Which site abundance augmentation should be used, \code{"pred"} for posterior
 predictive or \code{"real"} for realized (just the posterior).}
+
+\item{ci.prob}{Probability for HPD credible intervals. Defaults to 0.95}
 }
 \value{
 A named list with names equal to the variables in \code{aggregation.data}. Each

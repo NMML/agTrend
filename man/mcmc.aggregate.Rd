@@ -6,7 +6,7 @@
 mcmc.aggregate(start, end, data, obs.formula = NULL, aggregation, model.data,
   rw.order = NULL, abund.name, time.name, site.name, sig.abund,
   incl.zeros = TRUE, forecast = FALSE, ln.adj = 0, upper = Inf,
-  lower = -Inf, burn, iter, thin = 1, prior.list = NULL,
+  lower = -Inf, burn, iter, thin = 1, prior.list = NULL, ci.prob = 0.95,
   keep.site.abund = FALSE, keep.site.param = FALSE,
   keep.obs.param = FALSE)
 }
@@ -50,6 +50,8 @@ mcmc.aggregate(start, end, data, obs.formula = NULL, aggregation, model.data,
 \item{thin}{The amount of thinning of the MCMC sample. e.g., \code{thin=5} implies keeping every 5th MCMC sample for inference}
 
 \item{prior.list}{A named list containing the prior distributions for the parameters and random effects}
+
+\item{ci.prob}{Probability for constructing HPD credible intervals. Defaults to 0.95}
 
 \item{keep.site.abund}{Logical. Should the augmented site abundance be retained.}
 

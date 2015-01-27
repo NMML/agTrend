@@ -97,10 +97,10 @@ lnCol = "#d7191c"
 
 surv.yrs <- unique(fit$original.data$year)
 ag.sum.data <- fit$aggregation.pred.summary
-rel.dat <- fit$aggregation.rel.summary
-rel.dat <- rel.dat[rel.dat$year %in% surv.yrs,]
-colnames(rel.dat)[3:5] <- paste(colnames(rel.dat)[3:5], "REL", sep="")
-ag.sum.data <- merge(ag.sum.data, rel.dat, all=TRUE)
+real.dat <- fit$aggregation.real.summary
+real.dat <- real.dat[real.dat$year %in% surv.yrs,]
+colnames(real.dat)[3:5] <- paste(colnames(real.dat)[3:5], "REAL", sep="")
+ag.sum.data <- merge(ag.sum.data, real.dat, all=TRUE)
 ag.nm <- "Region"
 ag.sum.data[,ag.nm] <- factor(ag.sum.data[,ag.nm])
 b <- apply(trend2000, 2, median)
@@ -112,9 +112,9 @@ ag.sum.data$Region = factor(ag.sum.data$Region,
 fig1 <- ggplot(ag.sum.data, aes(x=year, y=post.median.abund)) + 
   facet_wrap(~Region, ncol=2) +
   geom_line() + 
-  geom_ribbon(aes(ymin=low90.hpd, ymax=hi90.hpd), alpha=0.4, fill=envCol) + 
+  geom_ribbon(aes(ymin=low.hpd, ymax=hi.hpd), alpha=0.4, fill=envCol) + 
   geom_line(aes(y=trend2000), color=lnCol, lwd=1.5, data=ag.sum.data[!is.na(ag.sum.data$trend2000),]) + 
-  geom_pointrange(aes(y=post.median.abundREL, ymin=low90.hpdREL, ymax=hi90.hpdREL), data=ag.sum.data[!is.na(ag.sum.data$post.median.abundREL),]) + 
+  geom_pointrange(aes(y=post.median.abundREAL, ymin=low.hpdREAL, ymax=hi.hpdREAL), data=ag.sum.data[!is.na(ag.sum.data$post.median.abundREAL),]) + 
   xlab("\nYear") + ylab("Aggregated count\n") + 
   theme_bw() + theme(panel.grid=element_blank(), text=element_text(size=14)) 
 
