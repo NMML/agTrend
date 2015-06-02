@@ -758,19 +758,19 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   summ.dat3 <- summ.dat1
   
   summ.dat1$post.median.abund <- apply(mcmc.sample$aggregated.pred.abund, 2, median)
-  summ.dat1$low.hpd <- HPDinterval(mcmc.sample$aggregated.pred.abund, ci.prob)[,1]
-  summ.dat1$hi.hpd <- HPDinterval(mcmc.sample$aggregated.pred.abund, ci.prob)[,2]
+  summ.dat1$low.hpd <- HPDinterval(mcmc(mcmc.sample$aggregated.pred.abund), ci.prob)[,1]
+  summ.dat1$hi.hpd <- HPDinterval(mcmc(mcmc.sample$aggregated.pred.abund), ci.prob)[,2]
   
   summ.dat3$post.median.abund <- apply(mcmc.sample$aggregated.real.abund, 2, median)
-  summ.dat3$low.hpd <- HPDinterval(mcmc.sample$aggregated.real.abund, ci.prob)[,1]
-  summ.dat3$hi.hpd <- HPDinterval(mcmc.sample$aggregated.real.abund, ci.prob)[,2]
+  summ.dat3$low.hpd <- HPDinterval(mcmc(mcmc.sample$aggregated.real.abund), ci.prob)[,1]
+  summ.dat3$hi.hpd <- HPDinterval(mcmc(mcmc.sample$aggregated.real.abund), ci.prob)[,2]
   
   if(keep.site.abund){
     summ.dat2 <- expand.grid(d.yrs, unique(as.character(data[,site.name])))
     summ.dat2 <- summ.dat2[summ.dat2[,1]>=start & summ.dat2[,1]<=end,]
     summ.dat2$post.median.abund <- apply(mcmc.sample$pred.site.abund, 2, median)
-    summ.dat2$low.hpd <- HPDinterval(mcmc.sample$pred.site.abund, ci.prob)[,1]
-    summ.dat2$hi.hpd <- HPDinterval(mcmc.sample$pred.site.abund, ci.prob)[,2]
+    summ.dat2$low.hpd <- HPDinterval(mcmc(mcmc.sample$pred.site.abund), ci.prob)[,1]
+    summ.dat2$hi.hpd <- HPDinterval(mcmc(mcmc.sample$pred.site.abund), ci.prob)[,2]
   }
   else summ.dat2 <- NULL
 
