@@ -1,198 +1,3 @@
-
-
-###
-### Functions
-###
-
-#' @title Create list of prior parameters for \code{mcmc.aggregate(...)} trend estimation.
-#' 
-#' @description This function takes user input to create the list of prior paremters necessary for 
-#' Bayesian inference of aggregated trends. The prior parameter list is a necessary argument for 
-#' the \code{\link{mcmc.aggregate}} function.
-#' 
-#' @param trend.limit Bounds on the individual site trends.
-#' @param model.data A data set which provides the individual site models used in \code{\link{mcmc.aggregate}}.
-#' @param gamma.mean Prior mean of the (multivariate) normal prior distribution for gamma
-#' @param gamma.prec Precision (inverse of variance) of the gamma prior distribution
-#' 
-#' @return A named list with entries for each of the parameters for which prior specification is necessary.
-#' 
-#' @details Using the site model data set \code{model.data} and a soft bound on the individual site
-#' trends (\code{trend.limit}) this function creates a sensible default for the list of prior 
-#' parameters necessary for Bayesian inference of aggregated trends. The value of 
-#' \code{trend.limit} should be in terms of % growth (e.g., \code{trend.limit=0.2} implies an upper limit 
-#' of 20 percent growth at each individual site). The lower bound is calculated as 
-#' 1/(1+trend.limit). This is the ower bound that is symmetric about zero on the log-scale.
-#' For \code{trend.limit=0.2}, the lower bound is approximately -0.17. 
-#' 
-#' Specifically, the prior distribution for the linear trend parameters (beta) 
-#' in log abundance at each site is set to a bivariate normal with mean \code{m.i=c(0,0)}
-#' and precision matrix \code{Q.i=diag(c(0,q))}, where \code{q} is chosen such that
-#' Pr[1/(1+trend.limit) < exp(beta[2])-1 < trend.limit] = 0.95.
-#' 
-#' 
-#' @export
-#' @import Matrix
-
-defaultPriorList = function(trend.limit=NULL, model.data, gamma.mean, gamma.prec){
-  if(is.null(trend.limit) & any(c("RW","lin")%in%model.data$trend)) stop("A value must be provided for 'trend.limit' when using 'lin' and 'RW' models!")
-  if(!is.null(trend.limit)) Q.trend = 1/(log(1+trend.limit)/2)^2
-  use.zi = !is.null(model.data$avail)
-  if(!use.zi) use.alpha=FALSE
-  if(use.zi) use.alpha = any(model.data$avail=="RW")
-  if(missing(gamma.mean) & missing(gamma.prec)){
-    gamma=NULL
-  } else {
-    if(missing(gamma.mean)) {
-      gamma.0 = rep(0,sqrt(length(gamma.prec)))
-      gamma=list(gamma.0=gamma.0, Q.gamma=gamma.prec)
-    } else if(missing(gamma.prec)) {
-      Q.gamma=matrix(0,nrow=length(gamma.0))
-      gamma=list(gamma.0=gamma.mean, Q.gamma=Q.gamma)
-    } else {gamma=list(gamma.0=gamma.mean, Q.gamma=gamma.prec)}
-  }
-  beta=list(
-    beta.0=rep(0,sum(model.data$trend=="const")+(sum(model.data$trend!="const")*2)),
-    Q.beta=Matrix(diag(
-      unlist(lapply(model.data$trend, 
-                  function(x){
-                    if(x!="const") {
-                      return(c(0,Q.trend))
-                    }else {
-                      return(c(0))
-                    }
-                  }))))
-  ) 
-
-  if(any(model.data$trend=="RW")){
-    tau=list(a.tau=0.5, b.tau=5.0E-5)
-  } else tau=NULL
-  zeta=list(a.zeta=0.5, b.zeta=5.0E-5)
-  if(use.zi & use.alpha) {
-    phi=list(a.phi=0.5, b.phi=5.0E-5)
-  } else phi=NULL
-  if(use.zi){
-    tmp=model.data$avail[model.data$avail!="none"]
-    theta.0=rep(0,sum(tmp=="const")+(sum(tmp!="const")*2))
-    theta=list(
-      theta.0=theta.0,
-      Q.theta=Matrix(diag(
-        unlist(lapply(tmp, 
-                      function(x){
-                        if(x!="const") {
-                          return(c(0,0))
-                        }else {
-                          return(c(0))
-                        }
-                      }))))
-      
-    )
-  } else theta=NULL
-  return(list(gamma=gamma, beta=beta, theta=theta, zeta=zeta, tau=tau, phi=phi)) 
-}
-
-#' @title Unscaled precision matrix for a random walk of order \code{p}.
-#' 
-#' @description This function calculates the entries for a precision matrix for a random walk of order \code{p}.
-#' It is used in the MCMC augementation with \code{p=2}, but, it is presented here for general use.
-#' 
-#' @param n The length of the RW(p) process. The length must be greater than or equal to \code{2*p}.
-#' @param p The order of the random walk process. 
-#' 
-#' @return A matrix
-#' 
-#' @references H. Rue and L. Held (2005) Gaussian Markov Random Fields. Chapman & Hall/CRC. 263 pp.
-#' @export
-#' @import mgcv
-iar.Q <- function(n,p)
-{
-  if(n<2*p) stop("n must be >= 2*p\n")
-  tmp1 <- out <- matrix(0,n,n)
-  tmp2 <- ((-1)^c(0:p))*choose(p,c(0:p))
-  for(i in (p+1):n)
-  {
-    tmp1[,i] <- c(rep(0,i-p-1), tmp2, rep(0, n-i))
-  }
-  for(i in n:(p+1))
-  {
-    tmp4 <- tmp1[,c(1:n)[tmp1[i,]!=0]]
-    tmp5 <- tmp1[i,tmp1[i,]!=0]
-    tmp6 <- t(t(tmp4) * tmp5)
-    tmp6[i,] <- 0
-    out[i,] <- -rowSums(tmp6)
-  }
-  out[1:p,] <- out[n:(n-p+1),n:1]
-  return(diag(apply(out,1,sum)) - out)
-}
-
-getSiteREInits <- function(data, abund.name, site.name, time.name, ln.adj, 
-                           Q0.omega.s, r0.omega.s, a.tau, b.tau, newdata, model.data){
-  #require(mgcv)
-  
-  data$y <- log(data[,abund.name]+ln.adj)
-  omega <- NULL
-  tau <- NULL
-  zeta <- NULL
-  b <- NULL
-  num <- 1
-  for(i in levels(data[,site.name])){
-    models <- model.data[model.data[,site.name]==i,]
-    if(models$trend%in%c("const","lin")){
-      if(models$trend=="const") fit <- lm(data[data[,site.name]==i,"y"]~1, )
-      else fit <- lm(data[data[,site.name]==i,"y"]~data[data[,site.name]==i,time.name])
-      omega <- c(omega, rep(0,nrow(newdata)))
-      b <- c(b, as.vector(coef(fit)))
-      zeta <- c(zeta, 1/var(residuals(fit)))
-    }
-    else{
-      form <- as.formula(paste("y ~ s(", time.name,")", sep=""))
-      fit <- gam(form, data=data, subset=(data[,site.name]==i))
-      omega.tmp <- predict(fit, newdata=newdata)
-      lm.fit <- lm(omega.tmp~newdata[,1])
-      omega.tmp <- matrix(residuals(lm.fit), ncol=1)
-      tau <- c(tau, (a.tau+r0.omega.s/2 -1)/(b.tau + as.vector(crossprod(omega.tmp, Q0.omega.s)%*%omega.tmp)/2))
-      omega <- c(omega, omega.tmp)
-      b <- c(b, as.vector(coef(lm.fit)))
-      zeta <- c(zeta, 1/var(residuals(fit)))
-    }
-    num <- num+1
-  }
-  zeta <- ifelse(zeta==Inf, max(zeta[zeta<Inf]), zeta)
-  return(list(omega=omega, zeta=zeta, tau=tau, b=b))
-}
-
-getSiteZIInits <- function(data.orig, abund.name, site.name, time.name,
-                           Q0.alpha.s, r0.alpha.s, a.phi, b.phi, newdata, model.data){
-  #require(mgcv)
-  data.orig$y <- 1.0*(data.orig[,abund.name]>0)
-  alpha <- NULL
-  phi <- NULL
-  theta <- NULL
-  num <- 1
-  for(i in levels(data.orig[,site.name])){
-    models <- model.data[model.data[,site.name]==i,]
-    if(models$avail=="none") next
-    else if(models$avail%in%c("const","lin")){
-      if(models$avail=="const") fit <- glm(data.orig[data.orig[,site.name]==i,"y"]~1, family=binomial(link="probit"))
-      else fit <- glm(data.orig[data.orig[,site.name]==i,"y"]~data.orig[data.orig[,site.name]==i,time.name], family=binomial("probit"))
-      alpha <- c(alpha, rep(0,nrow(newdata)))
-      theta <- c(theta, as.vector(coef(fit)))
-    }
-    else{
-      form <- as.formula(paste("y ~ s(", time.name,")", sep=""))
-      fit <- gam(form, data=data.orig[data.orig[,site.name]==i,],family=binomial(link="probit"))
-      alpha.tmp <- predict(fit, newdata=newdata)
-      lm.fit <- lm(alpha.tmp~newdata[,1])
-      alpha.tmp <- matrix(residuals(lm.fit), ncol=1)
-      phi <- c(phi, (a.phi+r0.alpha.s/2 -1)/(b.phi + as.vector(crossprod(alpha.tmp, Q0.alpha.s)%*%alpha.tmp)/2))
-      alpha <- c(alpha, alpha.tmp)
-      theta <- c(theta, as.vector(coef(lm.fit)))
-    }
-    num <- num+1
-  }
-  return(list(alpha=alpha, phi=phi, theta=theta))
-}
-
 #' @title 
 #' Posterior predictive sampling, aggregtion of abundance counts, and linear trend summary
 #' 
@@ -205,8 +10,7 @@ getSiteZIInits <- function(data.orig, abund.name, site.name, time.name,
 #' @param data  A \code{data.frame} that contains the abundance survey data.  
 #' @param obs.formula  A formula object specifying the model for the observation data
 #' @param aggregation  A factor variable. Aggregation is performed over each level of the factor.
-#' @param model.data  A data frame giving the augmentation model for each site. See 'Details'
-#' @param rw.order A names list, e.g., \code{list(omega=2, alpha=2)}, that gives the order of the RW process for the trend and ZI models.
+#' @param site.data  A data frame giving the augmentation model for each site. See 'Details'
 #' @param abund.name  A character string giving the name of the data to be aggregated
 #' @param time.name  A character string giving the name of the time variable
 #' @param site.name  A character string giving the name of the site variable. The variable should be a factor
@@ -220,7 +24,6 @@ getSiteZIInits <- function(data.orig, abund.name, site.name, time.name,
 #' @param iter  The number of MCMC iterations 
 #' @param thin  The amount of thinning of the MCMC sample. e.g., \code{thin=5} implies keeping every 5th MCMC sample for inference
 #' @param prior.list  A named list containing the prior distributions for the parameters and random effects
-#' @param ci.prob Probability for constructing HPD credible intervals. Defaults to 0.95
 #' @param keep.site.abund  Logical. Should the augmented site abundance be retained.
 #' @param keep.site.param  Logical. Should the site augmentation parameters be retianed.
 #' @param keep.obs.param  Logical. Should the observation parameters (gamma) be retianed. 
@@ -232,7 +35,7 @@ getSiteZIInits <- function(data.orig, abund.name, site.name, time.name,
 #' modeled, in its most general form, with a zero-inflated, nonparameteric model,
 #' \deqn{z_{st} = \beta_{s0} + \beta_{s1}t + \omega_{st} + \delta_{st} \mbox{ if } N_{st}>0,}{z_st = beta_s0 + beta_s1 * t + omega_st + delta_st if N_st > 0,}
 #' where \eqn{\beta_{s0}+\beta_{s1}t}{beta_s0 + beta_s1 * t} is the linear 
-#' trend, \eqn{\omega}{omega} is a random walk (of order 1 or 2) (RW), and \eqn{\delta_{st}}{delta_st} is an iid normal error variable. The zero-inflation part is added via 
+#' trend, \eqn{\omega}{omega} is a process convolution, and \eqn{\delta_{st}}{delta_st} is an iid normal error variable. The zero-inflation part is added via 
 #' the probit regression model
 #' \deqn{\mbox{probit}\{P(N_{st}>0)\} = \theta_{s0} + \theta_{s1}t + \alpha_{st},}{probit{P(N_st > 0)} = theta_s0 + theta_s1 * t + alpha_st,}
 #' where \eqn{\theta_{s0}}{theta_s0} and \eqn{\theta_{s1}}{theta_s1} are linear regression coefficients and \eqn{\alpha}{alpha} is a RW model.
@@ -252,8 +55,8 @@ getSiteZIInits <- function(data.orig, abund.name, site.name, time.name,
 #' of the survey effort by using the predictive distribution even for times and places where we have survey data. Using the aggregations, the average linear 
 #' trend is calculated for all years from \code{start} to \code{end} for each MCMC iteration.  
 #' 
-#' The \code{model.data} data.frame can be provided to reduce the most general model given above to submodels when there is not adequate data to fit the full model
-#' or, if zero-inflation is not necessary. The \code{model.data} must be a \code{data.frame} with columns 
+#' The \code{site.data} data.frame can be provided to reduce the most general model given above to submodels when there is not adequate data to fit the full model
+#' or, if zero-inflation is not necessary. The \code{site.data} must be a \code{data.frame} with columns 
 #' \itemize{
 #' \item{\code{site.name}- Column of all the sites in \code{data}. The name must be given by \code{site.name}}
 #' \item{\code{trend}- A column of all augmentation models to be used at each site, can be one, any only one, of the following: \code{c("const","lin","RW")}
@@ -280,33 +83,33 @@ getSiteZIInits <- function(data.orig, abund.name, site.name, time.name,
 #' @import coda
 #' @import truncnorm
 #' 
-mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, model.data, rw.order=NULL,
+mcmc.aggregate.pc <- function(start, end, data, obs.formula=NULL, aggregation, site.data,
                            abund.name, time.name, site.name, sig.abund, incl.zeros=TRUE, forecast=FALSE, 
                            ln.adj=0, upper=Inf, lower=-Inf,
-                           burn, iter, thin=1, prior.list=NULL, ci.prob=0.95,
+                           burn, iter, thin=1, prior.list=NULL, 
                            keep.site.abund=FALSE, keep.site.param=FALSE, keep.obs.param=FALSE
-                           ){
+){
   #require(Matrix)
   #require(coda)
-  use.trunc <- !is.null(model.data$avail) | (any(upper!=Inf) | any(lower!=-Inf))
+  use.trunc <- !is.null(site.data$avail) | (any(upper!=Inf) | any(lower!=-Inf))
   #if(use.trunc) require(truncnorm)
-  use.zi <- !is.null(model.data$avail)
+  use.zi <- !is.null(site.data$avail)
   if(use.zi){
-    use.zi <- any(model.data$avail!="none")
+    use.zi <- any(site.data$avail!="none")
   }
   if(use.zi) {
-    use.alpha <- any(model.data$avail=="RW")
+    use.alpha <- any(site.data$avail=="RW")
   } else use.alpha <- FALSE
   use.gam <- !is.null(obs.formula)
-  use.omega <- any(model.data$trend=="RW")
-
-  if(use.zi & !all(model.data$avail%in%c("none","const","lin","RW"))){
+  use.omega <- any(site.data$trend=="RW")
+  
+  if(use.zi & !all(site.data$avail%in%c("none","const","lin","RW"))){
     stop("\n Error: currently the only models for availability are: 'none', 'const', 'lin', or 'RW'\n")
   }
-  if(!all(model.data$trend%in%c("const","lin","RW"))){
+  if(!all(site.data$trend%in%c("const","lin","RW"))){
     stop("\n Error: currently the only models for trend are: 'const', 'lin', or 'RW'\n")
   }
-
+  
   
   # MODEL ###
   
@@ -341,7 +144,7 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
     data$Total <- "Total"
     aggregation <- "Total"
   }
-# Construct indexes for the entire augemented data set
+  # Construct indexes for the entire augemented data set
   #aggregation index
   data[,aggregation] <- factor(data[,aggregation])
   ag.data <- unique(data[,c(site.name,aggregation)])
@@ -352,13 +155,13 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   if(is.data.frame(lower)) lower <- log(merge(data.frame(site.idx), lower, by.y=site.name, by.x=1)$lower + ln.adj)
   # omega
   if(use.omega){
-    omegarw.data <- merge(data.frame(site.idx), model.data, by.y=site.name, by.x=1)
+    omegarw.data <- merge(data.frame(site.idx), site.data, by.y=site.name, by.x=1)
     omegarw <- c(omegarw.data$trend=="RW")
   }
   # alpha and fixed q
-  q.data <- merge(data.frame(site.idx), model.data, by.y=site.name, by.x=1)
+  q.data <- merge(data.frame(site.idx), site.data, by.y=site.name, by.x=1)
   if(use.alpha){
-    qrw <- c(q.data$avail=="RW")[q.data[,1]%in%model.data[model.data$avail!="none",site.name]]
+    qrw <- c(q.data$avail=="RW")[q.data[,1]%in%site.data[site.data$avail!="none",site.name]]
     Nqrw <- sum(qrw)
   }
   qzi <- c(q.data$avail!="none")
@@ -382,24 +185,24 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
     Xy <- Matrix(model.matrix(obs.formula, data=data))
   } else{Xy <- NULL}
   # create design matrix for beta
-  Xz <- .bdiag(lapply(model.data$trend, 
-                   function(x){
-                      if(x=="const"){return(matrix(rep(1,n.year), ncol=1))}
-                      else return(cbind(rep(1,n.year),d.yrs))                         
-                     }))
+  Xz <- .bdiag(lapply(site.data$trend, 
+                      function(x){
+                        if(x=="const"){return(matrix(rep(1,n.year), ncol=1))}
+                        else return(cbind(rep(1,n.year),d.yrs))                         
+                      }))
   # create constraint matrix for omega
   if(!is.null(rw.order$omega)){
     omega.order=rw.order$omega
   } else{omega.order=1}
   if(use.omega){
     if(omega.order==2){
-    Xz.rw <- .bdiag(lapply(model.data$trend[model.data$trend=="RW"], 
-                            function(x){
-                              if(x=="const"){return(matrix(rep(1,n.year), ncol=1))}
-                              else return(cbind(rep(1,n.year),d.yrs))                         
-                            }))
+      Xz.rw <- .bdiag(lapply(site.data$trend[site.data$trend=="RW"], 
+                             function(x){
+                               if(x=="const"){return(matrix(rep(1,n.year), ncol=1))}
+                               else return(cbind(rep(1,n.year),d.yrs))                         
+                             }))
     } else{
-      Xz.rw <- .bdiag(lapply(model.data$trend[model.data$trend=="RW"], 
+      Xz.rw <- .bdiag(lapply(site.data$trend[site.data$trend=="RW"], 
                              function(x){
                                if(x=="const"){return(matrix(rep(1,n.year), ncol=1))}
                                else return(rep(1,n.year))                         
@@ -412,11 +215,11 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
     alpha.order=rw.order$alpha
   } else{alpha.order=1}
   if(use.zi){
-    Xq <- .bdiag(lapply(model.data$avail[model.data$avail!="none"], 
-                            function(x){
-                              if(x=="const"){return(matrix(rep(1,n.year), ncol=1))}
-                              else return(cbind(rep(1,n.year),d.yrs))                         
-                            }))
+    Xq <- .bdiag(lapply(site.data$avail[site.data$avail!="none"], 
+                        function(x){
+                          if(x=="const"){return(matrix(rep(1,n.year), ncol=1))}
+                          else return(cbind(rep(1,n.year),d.yrs))                         
+                        }))
   }
   # Precision for epsilon
   if(!missing(sig.abund)) {
@@ -427,8 +230,8 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   Q0.alpha.s <- Matrix(iar.Q(n.year, alpha.order))
   r0.omega.s <- dim(Q0.omega.s)[1] - omega.order
   r0.alpha.s <- dim(Q0.alpha.s)[1] - alpha.order
-  if(use.omega) suppressMessages(Qomega.0 <- kronecker(Diagonal(sum(model.data$trend=="RW")), Q0.omega.s))
-  if(use.alpha) suppressMessages(Qalpha.0 <- kronecker(Diagonal(sum(model.data$avail=="RW")), Q0.alpha.s))
+  if(use.omega) suppressMessages(Qomega.0 <- kronecker(Diagonal(sum(site.data$trend=="RW")), Q0.omega.s))
+  if(use.alpha) suppressMessages(Qalpha.0 <- kronecker(Diagonal(sum(site.data$avail=="RW")), Q0.alpha.s))
   
   # PRIORS ###
   #gamma
@@ -504,7 +307,7 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   
   if(use.zi){
     inits.zi <- suppressWarnings(getSiteZIInits(data.orig, abund.name, site.name, time.name, 
-                          Q0.alpha.s, r0.alpha.s, a.phi, b.phi, newdata, model.data))
+                                                Q0.alpha.s, r0.alpha.s, a.phi, b.phi, newdata, site.data))
     a <- inits.zi$alpha
     theta <- inits.zi$theta
     phi <- inits.zi$phi
@@ -519,7 +322,7 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
     z.01.tilde <- rtruncnorm(Nzi, a=a.zi[qzi], b=b.zi[qzi], mean=q, sd=1)
   }
   inits <- getSiteREInits(data, abund.name, site.name, time.name, 
-                          ln.adj, Q0.omega.s, r0.omega.s, a.tau, b.tau, newdata, model.data)
+                          ln.adj, Q0.omega.s, r0.omega.s, a.tau, b.tau, newdata, site.data)
   
   #beta
   b <- inits$b
@@ -549,13 +352,13 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   ag.nms <- apply(ag.df, 1, paste, collapse="-")
   H <- solve(crossprod(ag.mm))%*%t(ag.mm)
   site.nms <- apply(expand.grid(yrs, unique(data[,site.name])), 1, paste, collapse="-")
-    
+  
   # STORAGE MATRICES ###
   #prediction and trends
   ag.pred.abund.stor <- matrix(nrow=iter, ncol=length(ag.nms))
   colnames(ag.pred.abund.stor) <- ag.nms
   ag.abund.stor <- matrix(nrow=iter, ncol=length(ag.nms))
-  colnames(ag.abund.stor) <- ag.nms
+  colnames(ag.pred.abund.stor) <- ag.nms
   if(keep.site.abund){
     pred.site.abund.stor <- matrix(nrow=iter, ncol=length(site.nms))
     real.site.abund.stor <- matrix(nrow=iter, ncol=length(site.nms))
@@ -563,18 +366,18 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   }
   ag.trend.stor <- matrix(nrow=iter, ncol=2*length(levels(data[,aggregation])))
   colnames(ag.trend.stor) <- c(paste(levels(data[,aggregation]),"(Intercept)",sep=":"), 
-                                 paste(levels(data[,aggregation]), "(Trend)", sep=":"))
+                               paste(levels(data[,aggregation]), "(Trend)", sep=":"))
   ag.pred.trend.stor <- ag.trend.stor  
   #beta
   if(keep.site.param){
     b.stor <- matrix(nrow=iter, ncol=ncol(Xz))
     colnames(b.stor) <- unlist(mapply( 
-                                      function(x,s){
-                                        if(x!="const") return(paste(c("(Intercept)", "(Trend)"), c(s,s), sep=":"))
-                                        else return(paste("(Intercept)",s, sep=":"))
-                                      },
-                                      x=model.data$trend, s=as.character(model.data[,site.name])
-                              ))
+      function(x,s){
+        if(x!="const") return(paste(c("(Intercept)", "(Trend)"), c(s,s), sep=":"))
+        else return(paste("(Intercept)",s, sep=":"))
+      },
+      x=site.data$trend, s=as.character(site.data[,site.name])
+    ))
   }
   #gamma
   if(keep.obs.param & use.gam){
@@ -583,25 +386,25 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   }
   #p and phi
   if(keep.site.param & use.zi){
-    p.stor <- matrix(nrow=iter, ncol=n.year*sum(model.data$avail!="none")) 
-    colnames(p.stor) <- apply(expand.grid(d.yrs, as.character(model.data[model.data$avail!="none",site.name])),1,paste,collapse=":")
+    p.stor <- matrix(nrow=iter, ncol=n.year*sum(site.data$avail!="none")) 
+    colnames(p.stor) <- apply(expand.grid(d.yrs, as.character(site.data[site.data$avail!="none",site.name])),1,paste,collapse=":")
     if(use.alpha){
-      phi.stor <- matrix(nrow=iter, ncol=sum(model.data$avail=="RW"))
-      colnames(phi.stor) <- as.character(model.data[model.data$avail=="RW", site.name])
+      phi.stor <- matrix(nrow=iter, ncol=sum(site.data$avail=="RW"))
+      colnames(phi.stor) <- as.character(site.data[site.data$avail=="RW", site.name])
     }
   }
   #tau and zeta
   if(keep.site.param){
     if(use.omega){
-      tau.stor = matrix(nrow=iter, ncol=sum(model.data$trend=="RW"))
-      colnames(tau.stor) <- as.character(model.data[model.data$trend=="RW", site.name])
+      tau.stor = matrix(nrow=iter, ncol=sum(site.data$trend=="RW"))
+      colnames(tau.stor) <- as.character(site.data[site.data$trend=="RW", site.name])
     }
     zeta.stor <- matrix(nrow=iter, ncol=n.site)
     colnames(zeta.stor) <- as.character(levels(data.orig[,site.name]))
   }
   # MCMC UPDATES ###
   st.mcmc <- Sys.time()
-
+  
   for(i in 1:(burn + iter*thin)){
     
     #update z
@@ -641,7 +444,7 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
       d.g <- XyQepsy.Qgg0 - XyQepsM%*%z
       g <- D.g.inv %*% d.g + cholD.g.inv %*% rnorm(ncol(Xy),0,1)
     }
-  
+    
     #update beta
     D.b <- suppressMessages(crossprod(Xz, Qdelta) %*% Xz + Qb)
     d.b <- crossprod(Xz,Qdelta)%*%(z-omega) + Qbb0
@@ -658,7 +461,7 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
       #update tau
       b1.tau <- b.tau + aggregate(as.vector(omega[omegarw]), list(site.idx[omegarw]), FUN=function(x,Q0.s){crossprod(x, Q0.s)%*%x}, Q0.s=as.matrix(Q0.omega.s))$x/2
       a1.tau <- a.tau + r0.omega.s/2
-      tau <- rgamma(sum(model.data$trend=="RW"), a1.tau, b1.tau)
+      tau <- rgamma(sum(site.data$trend=="RW"), a1.tau, b1.tau)
       Tau <- Diagonal(x=rep(tau, each=n.year))
       Qomega <- Tau %*% Qomega.0
     }
@@ -669,7 +472,7 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
     a1.zeta <- a.zeta + n.year/2
     zeta <- rgamma(n.site, a1.zeta, b1.zeta)
     Qdelta <-  Diagonal(x=rep(zeta, each=n.year))
-        
+    
     #aggregate abundence trends
     N.obs <- exp(as.vector(z))-ln.adj
     if(use.zi){
@@ -741,7 +544,7 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
     )
     if(use.omega) site.param = append(site.param, list(tau=mcmc(tau.stor)))
   }
-
+  
   else site.param=NULL
   if(keep.obs.param & use.gam){
     gamma=mcmc(g.stor)
@@ -759,22 +562,22 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   summ.dat3 <- summ.dat1
   
   summ.dat1$post.median.abund <- apply(mcmc.sample$aggregated.pred.abund, 2, median)
-  summ.dat1$low.hpd <- HPDinterval(mcmc(mcmc.sample$aggregated.pred.abund), ci.prob)[,1]
-  summ.dat1$hi.hpd <- HPDinterval(mcmc(mcmc.sample$aggregated.pred.abund), ci.prob)[,2]
+  summ.dat1$low90.hpd <- HPDinterval(mcmc.sample$aggregated.pred.abund, 0.9)[,1]
+  summ.dat1$hi90.hpd <- HPDinterval(mcmc.sample$aggregated.pred.abund, 0.9)[,2]
   
   summ.dat3$post.median.abund <- apply(mcmc.sample$aggregated.real.abund, 2, median)
-  summ.dat3$low.hpd <- HPDinterval(mcmc(mcmc.sample$aggregated.real.abund), ci.prob)[,1]
-  summ.dat3$hi.hpd <- HPDinterval(mcmc(mcmc.sample$aggregated.real.abund), ci.prob)[,2]
+  summ.dat3$low90.hpd <- HPDinterval(mcmc.sample$aggregated.real.abund, 0.9)[,1]
+  summ.dat3$hi90.hpd <- HPDinterval(mcmc.sample$aggregated.real.abund, 0.9)[,2]
   
   if(keep.site.abund){
     summ.dat2 <- expand.grid(d.yrs, unique(as.character(data[,site.name])))
     summ.dat2 <- summ.dat2[summ.dat2[,1]>=start & summ.dat2[,1]<=end,]
     summ.dat2$post.median.abund <- apply(mcmc.sample$pred.site.abund, 2, median)
-    summ.dat2$low.hpd <- HPDinterval(mcmc(mcmc.sample$pred.site.abund), ci.prob)[,1]
-    summ.dat2$hi.hpd <- HPDinterval(mcmc(mcmc.sample$pred.site.abund), ci.prob)[,2]
+    summ.dat2$low90.hpd <- HPDinterval(mcmc.sample$pred.site.abund, 0.9)[,1]
+    summ.dat2$hi90.hpd <- HPDinterval(mcmc.sample$pred.site.abund, 0.9)[,2]
   }
   else summ.dat2 <- NULL
-
+  
   colnames(summ.dat1)[1:2] <- c(time.name, aggregation)
   colnames(summ.dat3)[1:2] <- c(time.name, aggregation)
   colnames(summ.dat2)[1:2] <- c(time.name, site.name)
@@ -785,7 +588,7 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
     site.summary=summ.dat2, 
     mcmc.sample=mcmc.sample, 
     original.data=data.orig
-    )
+  )
   attr(output, "site.name") <- site.name
   attr(output, "time.name") <- time.name
   attr(output, "aggregation") <- aggregation
@@ -795,113 +598,32 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   
 }
 
-##############################################################
-#' @title Recalculate posterior predictive trend with a different time scale.
-#' @param x An mcmc augmentation object produced by a call to \code{\link{mcmc.aggregate}} or 
-#' an element of the list produced by a call to \code{\link{newAggregation}}.
-#' @param start A new start value for the time span
-#' @param end A new end value for the time span
-#' @param type The type of trend calculated. Use \code{"pred"} for posterior predictive trends
-#' and \code{"real"} to use the estimated, realized abumndance aggregation.
-#' @param order The order of trend calculated. Can be one of \code{"lin"}, for linear trends, 
-#' or, \code{"const"}, for mean log-abundence.
-#' @export
-#'  
-updateTrend <- function(x, start, end, type="pred", order="lin"){
-  #require(coda)
-  if(type=="pred" | is.null(x$mcmc.sample$aggregated.real.abund)) smp <- x$mcmc.sample$aggregated.pred.abund
-  else if(type=="real") smp <- x$mcmc.sample$aggregated.real.abund
-  else stop("Unknown 'type', must be 'pred' or 'real'.\n")
-  nms <- strsplit(colnames(smp),"-")
-  time <- as.numeric(sapply(nms, function(x)x[[1]]))
-  start <- max(start, min(time))
-  end <- min(end, max(time))
-  time.idx <- time>=start & time<=end
-  agg <- sapply(nms, function(x)x[[2]])
-  if(any(is.na(suppressWarnings(as.numeric(agg))))) agg <- factor(agg)
-  else agg <- factor(as.numeric(agg))
-  nms.agg <- as.character(levels(agg))
+
+makeConvolutionMatrix = function(covariate, knots){
+  d=rdist(covariate, knots)
+  s=min(d)
+  K=dnorm(d, 0, sd=s)
   
-  yrs <- c(start:end)
-  ag.df <- expand.grid(yrs, levels(agg))
-  if(order=="lin"){
-    if(length(nms.agg)>1) {
-      ag.mm <- model.matrix(~(ag.df[,2]+0) + (ag.df[,1]:ag.df[,2]+0))
-    } else {
-      ag.mm <- cbind(rep(1,nrow(ag.df)), yrs)
-    }
-    H <- solve(crossprod(ag.mm))%*%t(ag.mm)
-    y <- log(smp[,time.idx] + attr(x, "ln.adj"))
-    tsmp <- t(apply(y, 1, function(y){H%*%y}))
-    colnames(tsmp) <- c(paste(nms.agg, "(Intercept)"), paste(nms.agg, "(Trend)"))
-  } else if(order=="const"){
-    if(length(nms.agg)>1) ag.mm <- model.matrix(~(ag.df[,2]+0))
-    else ag.mm <- matrix(rep(1,nrow(ag.df)), ncol=1)
-    H <- solve(crossprod(ag.mm))%*%t(ag.mm)
-    y <- log(smp[,time.idx] + attr(x, "ln.adj"))
-    tsmp <- matrix(t(apply(y, 1, function(y){H%*%y})), ncol=ncol(ag.mm))
-    colnames(tsmp) <- c(paste(nms.agg, "(Intercept)"))
-  }
-  else stop("Unknown 'type' specified! See ?updateTrend.")
-  return(mcmc(tsmp))
 }
 
-##############################################################
-#' @title Recalculate new site aggregations from a previous MCMC aggregation
-#' 
-#' @description 
-#' If the site abundence sample was retained in a call to \code{\link{mcmc.aggregate}} the 
-#' sites can be re-aggregated according to different region specifications.
-#' 
-#' @param fit The output list from a previous call to \code{\link{mcmc.aggregate}}.
-#' In order to use this function, \code{keep.site.abund = TRUE} had to be used in the original creation of \code{fit}. Else,
-#' there is nothing to be aggregated!
-#' @param aggregation.data  A data frame with the sites in one column 
-#' (with the same name as \code{site.name} used in the original call to create \code{fit}). The other columns
-#' are factor variables defining other site aggregations.
-#' @param type Which site abundance augmentation should be used, \code{"pred"} for posterior
-#' predictive or \code{"real"} for realized (just the posterior).
-#' @param ci.prob Probability for HPD credible intervals. Defaults to 0.95
-#' 
-#' @return 
-#' A named list with names equal to the variables in \code{aggregation.data}. Each
-#' element of the list is another list with elements:
-#' \item{aggregated.abund}{The MCMC sample of the new aggregation}
-#' \item{aggregation.summary}{A summary of the aggregation MCMC}
-#' @export
-#'  
-newAggregation <- function(fit, aggregation.data, type="pred", ci.prob=0.95){
-  #require(coda)
-  if(type == "pred") xxx <- fit$mcmc.sample$pred.site.abund
-  if(type == "real") xxx <- fit$mcmc.sample$real.site.abund
-  if(is.null(xxx)) stop("Site abundance data was not retained in the call to 'mcmc.aggreation()'\n Please re-run with 'keep.site.abund=TRUE'\n")
-  site.name <- attr(fit,"site.name")
-  time.name <- attr(fit,"time.name")
-  site.idx <- data.frame(sapply(strsplit(colnames(xxx),"-"), function(x){paste(x[-1],collapse="-")}),
-                    as.numeric(sapply(strsplit(colnames(xxx),"-"), function(x){x[[1]]}))) 
-  colnames(site.idx) <- c(site.name, time.name)
-  m1 <- merge(site.idx, aggregation.data, all=TRUE)
-  ag.names <- colnames(aggregation.data)[colnames(aggregation.data)!=site.name]
-  outlist <- vector("list", length(ag.names))
-  #Tmat <- cbind(rep(1,length(unique(site.idx[,2]))), unique(site.idx[,2]))
-  names(outlist) <- ag.names
-    for(i in 1:length(ag.names)){
-      cat("Processing", type, "aggregation:", ag.names[i], "...\n")
-      a1 <- mcmc(t(apply(as.matrix(xxx), 1, FUN=function(v){aggregate(v, list(m1[,time.name],m1[,ag.names[i]]), FUN=sum)$x})))
-      colnames(a1) <- apply(expand.grid(unique(site.idx[,time.name]), levels(factor(aggregation.data[,ag.names[i]]))),1,paste, collapse="-")
-      ag.summary <- expand.grid(unique(site.idx[,time.name]), levels(factor(aggregation.data[,ag.names[i]])))
-      colnames(ag.summary) <- c(time.name, ag.names[i])
-      ag.summary$post.median.abund <- apply(a1,2,median)
-      hpd <- HPDinterval(a1, ci.prob)
-      ag.summary$low.hpd <- hpd[,1]
-      ag.summary$hi.hpd <- hpd[,2]
-      if(type=="pred") {
-        outlist[[i]] <- list(mcmc.sample=list(aggregated.pred.abund=a1), aggregation.pred.summary=ag.summary)
-      } else  {
-        outlist[[i]] <- list(mcmc.sample=list(aggregated.real.abund=a1), aggregation.real.summary=ag.summary)
-      }
-      attr(outlist[[i]], "ln.adj") <- attr(fit, "ln.adj")
-    }  
-  return(outlist)
+makeSplineMatrix = function(covariate, knots){
+  Z_K<-(abs(outer(covariate,knots,"-")))^3
+  OMEGA_all<-(abs(outer(knots,knots,"-")))^3
+  svd.OMEGA_all<-svd(OMEGA_all)
+  sqrt.OMEGA_all<-t(svd.OMEGA_all$v %*%
+                      (t(svd.OMEGA_all$u)*sqrt(svd.OMEGA_all$d)))
+  Z<-t(solve(sqrt.OMEGA_all,t(Z_K)))
+  return(Z)
+}
+
+makeKnots=function(covariate, num.knots, regular=TRUE){
+  if(regular){
+    eps=diff(range(covariate))/num.knots
+    knots=seq(min(covariate)+eps/2, max(covariate), by=eps)
+    return(knots)
+  } else{
+    knots<-as.vector(quantile(unique(covariate),seq(0,1,length=(num.knots+2))[-c(1,(num.knots+2))]))
+    return(knots)
+  }
 }
 

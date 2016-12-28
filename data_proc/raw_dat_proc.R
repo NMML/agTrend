@@ -6,7 +6,7 @@ nsites <- nrow(dat)
 dat <- melt(dat, id.vars=1:10, variable.name="year")
 dat$year <- as.numeric(sapply(strsplit(as.character(dat$year), "X"), function(x){x[[2]]}))
 dat <- dat[!is.na(dat$value),]
-dat <- dat[order(dat$site, dat$year),]
+dat <- dat[order(dat$Site, dat$year),]
 names(dat)[ncol(dat)] <- "count"
 wdpsNonpups <- dat
 save(wdpsNonpups, file="data/wdpsNonpups.rda")
@@ -18,10 +18,10 @@ save(photoCorrection, file="data/photoCorrection.rda")
 ### WDPS pups
 dat <- read.csv("data_proc/wdpsPups.csv")
 nsites <- nrow(dat)
-dat <- melt(dat, id.vars=c("site","Region","RCA"), variable.name="year")
+dat <- melt(dat, id.vars=c("Site","Region","RCA"), variable.name="year")
 dat$year <- as.numeric(sapply(strsplit(as.character(dat$year), "X"), function(x){x[[2]]}))
 dat <- dat[!is.na(dat$value),]
-dat <- dat[order(dat$site, dat$year),]
+dat <- dat[order(dat$Site, dat$year),]
 names(dat)[ncol(dat)] <- "count"
 wdpsPups <- dat
 save(wdpsPups, file="data/wdpsPups.rda")
