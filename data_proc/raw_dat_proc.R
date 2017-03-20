@@ -1,35 +1,26 @@
-library(reshape2)
+library(tidyverse)
+library(stringr)
 
 ### WDPS Nonpups
-dat <- read.csv("data_proc/wdps_ssl_nonpups.csv")
-nsites <- nrow(dat)
-dat <- melt(dat, id.vars=1:10, variable.name="year")
-dat$year <- as.numeric(sapply(strsplit(as.character(dat$year), "X"), function(x){x[[2]]}))
-dat <- dat[!is.na(dat$value),]
-dat <- dat[order(dat$Site, dat$year),]
-names(dat)[ncol(dat)] <- "count"
-wdpsNonpups <- dat
+wdpsNonpups = read.csv("data_proc/wdps_ssl_nonpups.csv") %>% 
+  gather(year, count, X1978:X2016) %>% 
+  mutate(year = as.numeric(str_sub(year, -4)), count=as.integer(count)) %>% 
+  filter(!is.na(count)) %>% arrange(Site)
 save(wdpsNonpups, file="data/wdpsNonpups.rda")
 
+
 ### Photo experiment
-photoCorrection <-  read.csv("data_proc/photoCorrection.csv")
+photoCorrection = read.csv("data_proc/photoCorrection.csv") %>% rename(Site=site)
 save(photoCorrection, file="data/photoCorrection.rda")
 
 ### WDPS pups
-dat <- read.csv("data_proc/wdpsPups.csv")
-nsites <- nrow(dat)
-dat <- melt(dat, id.vars=c("Site","Region","RCA"), variable.name="year")
-dat$year <- as.numeric(sapply(strsplit(as.character(dat$year), "X"), function(x){x[[2]]}))
-dat <- dat[!is.na(dat$value),]
-dat <- dat[order(dat$Site, dat$year),]
-names(dat)[ncol(dat)] <- "count"
-wdpsPups <- dat
+wdpsPups <- read.csv("data_proc/wdpsPups.csv") %>% gather(year, count, -c(1:3)) %>% 
+  mutate(year=str_sub(year,-4), count=as.integer(count)) %>% 
+  filter(!is.na(count)) %>% arrange(Site)
 save(wdpsPups, file="data/wdpsPups.rda")
 
-dat <- read.csv("data_proc/edps_pups.csv")
-edpsPups <- dat
+edpsPups <- read.csv("data_proc/edps_pups.csv")
 save(edpsPups, file="data/edpsPups.rda")
 
-dat <- read.csv("data_proc/edps_nonpups.csv")
-edpsNonpups <- dat
+edpsNonpups <- read.csv("data_proc/edps_nonpups.csv")
 save(edpsNonpups, file="data/edpsNonpups.rda")

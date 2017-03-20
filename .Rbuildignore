@@ -2,6 +2,5 @@
 ^\.Rproj\.user$
 ^data_proc$
 ^demo_results$
-^builds$
 ^\.git
 ^\\.gitignore$
