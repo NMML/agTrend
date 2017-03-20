@@ -34,7 +34,7 @@ library(ggplot2)
 plt <- ggplot(aes(x=year, y=abund, color=region), data=fitdat) + 
   geom_point(size=3) +
   geom_line(aes(y=post.median.abund)) +
-  geom_ribbon(aes(ymin=low90.hpd, ymax=hi90.hpd, fill=region), alpha=0.25) +
+  geom_ribbon(aes(ymin=low.hpd, ymax=hi.hpd, fill=region), alpha=0.25) +
   xlab("\nYear") + ylab("Estimated SSL abundance (4.5 x pup count)\n") + ggtitle("eDPS 30 Year Trend\n")
 suppressWarnings(print(plt))
 # Uncomment to save figure:

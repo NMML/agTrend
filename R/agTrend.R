@@ -128,6 +128,7 @@ iar.Q <- function(n,p)
 getSiteREInits <- function(data, abund.name, site.name, time.name, ln.adj, 
                            Q0.omega.s, r0.omega.s, a.tau, b.tau, newdata, model.data){
   #require(mgcv)
+  
   data$y <- log(data[,abund.name]+ln.adj)
   omega <- NULL
   tau <- NULL
@@ -219,6 +220,7 @@ getSiteZIInits <- function(data.orig, abund.name, site.name, time.name,
 #' @param iter  The number of MCMC iterations 
 #' @param thin  The amount of thinning of the MCMC sample. e.g., \code{thin=5} implies keeping every 5th MCMC sample for inference
 #' @param prior.list  A named list containing the prior distributions for the parameters and random effects
+#' @param ci.prob Probability for constructing HPD credible intervals. Defaults to 0.95
 #' @param keep.site.abund  Logical. Should the augmented site abundance be retained.
 #' @param keep.site.param  Logical. Should the site augmentation parameters be retianed.
 #' @param keep.obs.param  Logical. Should the observation parameters (gamma) be retianed. 
@@ -281,7 +283,7 @@ getSiteZIInits <- function(data.orig, abund.name, site.name, time.name,
 mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, model.data, rw.order=NULL,
                            abund.name, time.name, site.name, sig.abund, incl.zeros=TRUE, forecast=FALSE, 
                            ln.adj=0, upper=Inf, lower=-Inf,
-                           burn, iter, thin=1, prior.list=NULL, 
+                           burn, iter, thin=1, prior.list=NULL, ci.prob=0.95,
                            keep.site.abund=FALSE, keep.site.param=FALSE, keep.obs.param=FALSE
                            ){
   #require(Matrix)
@@ -553,11 +555,11 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   ag.pred.abund.stor <- matrix(nrow=iter, ncol=length(ag.nms))
   colnames(ag.pred.abund.stor) <- ag.nms
   ag.abund.stor <- matrix(nrow=iter, ncol=length(ag.nms))
-  colnames(ag.pred.abund.stor) <- ag.nms
+  colnames(ag.abund.stor) <- ag.nms
   if(keep.site.abund){
     pred.site.abund.stor <- matrix(nrow=iter, ncol=length(site.nms))
-    rel.site.abund.stor <- matrix(nrow=iter, ncol=length(site.nms))
-    colnames(pred.site.abund.stor) <- colnames(rel.site.abund.stor) <- site.nms
+    real.site.abund.stor <- matrix(nrow=iter, ncol=length(site.nms))
+    colnames(pred.site.abund.stor) <- colnames(real.site.abund.stor) <- site.nms
   }
   ag.trend.stor <- matrix(nrow=iter, ncol=2*length(levels(data[,aggregation])))
   colnames(ag.trend.stor) <- c(paste(levels(data[,aggregation]),"(Intercept)",sep=":"), 
@@ -699,7 +701,7 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
         ag.pred.trend.stor[j,] <- as.vector(ag.pred.trend)
         if(keep.site.abund){
           pred.site.abund.stor[j,] <- N.pred[yr.idx>=start & yr.idx<=end]
-          rel.site.abund.stor[j,] <- N.obs[yr.idx>=start & yr.idx<=end]
+          real.site.abund.stor[j,] <- N.obs[yr.idx>=start & yr.idx<=end]
         }
         if(keep.site.param){
           b.stor[j,] <- as.vector(b)
@@ -729,7 +731,7 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   close(pb)
   if(keep.site.abund){
     pred.site.abund <- mcmc(pred.site.abund.stor)
-    rel.site.abund <- mcmc(rel.site.abund.stor)
+    real.site.abund <- mcmc(real.site.abund.stor)
   }
   else pred.site.abund <- NULL
   if(keep.site.param){
@@ -748,8 +750,8 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   if(use.zi) prob.avail <- mcmc(p.stor)
   else  prob.avail <- NULL
   mcmc.sample <- list(pred.trend=mcmc(ag.pred.trend.stor), trend=mcmc(ag.trend.stor), 
-                      aggregated.pred.abund=mcmc(ag.pred.abund.stor), aggregated.rel.abund=mcmc(ag.abund.stor),
-                      pred.site.abund=pred.site.abund, rel.site.abund=rel.site.abund,
+                      aggregated.pred.abund=mcmc(ag.pred.abund.stor), aggregated.real.abund=mcmc(ag.abund.stor),
+                      pred.site.abund=pred.site.abund, real.site.abund=real.site.abund,
                       site.param=site.param, gamma=gamma,
                       prob.avail=prob.avail)
   summ.dat1 <- expand.grid(d.yrs, levels(ag.data[,2]))
@@ -757,19 +759,19 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   summ.dat3 <- summ.dat1
   
   summ.dat1$post.median.abund <- apply(mcmc.sample$aggregated.pred.abund, 2, median)
-  summ.dat1$low90.hpd <- HPDinterval(mcmc.sample$aggregated.pred.abund, 0.9)[,1]
-  summ.dat1$hi90.hpd <- HPDinterval(mcmc.sample$aggregated.pred.abund, 0.9)[,2]
+  summ.dat1$low.hpd <- HPDinterval(mcmc(mcmc.sample$aggregated.pred.abund), ci.prob)[,1]
+  summ.dat1$hi.hpd <- HPDinterval(mcmc(mcmc.sample$aggregated.pred.abund), ci.prob)[,2]
   
-  summ.dat3$post.median.abund <- apply(mcmc.sample$aggregated.rel.abund, 2, median)
-  summ.dat3$low90.hpd <- HPDinterval(mcmc.sample$aggregated.rel.abund, 0.9)[,1]
-  summ.dat3$hi90.hpd <- HPDinterval(mcmc.sample$aggregated.rel.abund, 0.9)[,2]
+  summ.dat3$post.median.abund <- apply(mcmc.sample$aggregated.real.abund, 2, median)
+  summ.dat3$low.hpd <- HPDinterval(mcmc(mcmc.sample$aggregated.real.abund), ci.prob)[,1]
+  summ.dat3$hi.hpd <- HPDinterval(mcmc(mcmc.sample$aggregated.real.abund), ci.prob)[,2]
   
   if(keep.site.abund){
     summ.dat2 <- expand.grid(d.yrs, unique(as.character(data[,site.name])))
     summ.dat2 <- summ.dat2[summ.dat2[,1]>=start & summ.dat2[,1]<=end,]
     summ.dat2$post.median.abund <- apply(mcmc.sample$pred.site.abund, 2, median)
-    summ.dat2$low90.hpd <- HPDinterval(mcmc.sample$pred.site.abund, 0.9)[,1]
-    summ.dat2$hi90.hpd <- HPDinterval(mcmc.sample$pred.site.abund, 0.9)[,2]
+    summ.dat2$low.hpd <- HPDinterval(mcmc(mcmc.sample$pred.site.abund), ci.prob)[,1]
+    summ.dat2$hi.hpd <- HPDinterval(mcmc(mcmc.sample$pred.site.abund), ci.prob)[,2]
   }
   else summ.dat2 <- NULL
 
@@ -779,7 +781,7 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   output <- list(
     trend.summary=summary(mcmc.sample$pred.trend), 
     aggregation.pred.summary=summ.dat1, 
-    aggregation.rel.summary=summ.dat3,
+    aggregation.real.summary=summ.dat3,
     site.summary=summ.dat2, 
     mcmc.sample=mcmc.sample, 
     original.data=data.orig
@@ -800,16 +802,16 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
 #' @param start A new start value for the time span
 #' @param end A new end value for the time span
 #' @param type The type of trend calculated. Use \code{"pred"} for posterior predictive trends
-#' and \code{"rel"} to use the estimated, realized abumndance aggregation.
+#' and \code{"real"} to use the estimated, realized abumndance aggregation.
 #' @param order The order of trend calculated. Can be one of \code{"lin"}, for linear trends, 
 #' or, \code{"const"}, for mean log-abundence.
 #' @export
 #'  
 updateTrend <- function(x, start, end, type="pred", order="lin"){
   #require(coda)
-  if(type=="pred" | is.null(x$mcmc.sample$aggregated.rel.abund)) smp <- x$mcmc.sample$aggregated.pred.abund
-  else if(type=="rel") smp <- x$mcmc.sample$aggregated.rel.abund
-  else stop("Unknown 'type', must be 'pred' or 'rel'.\n")
+  if(type=="pred" | is.null(x$mcmc.sample$aggregated.real.abund)) smp <- x$mcmc.sample$aggregated.pred.abund
+  else if(type=="real") smp <- x$mcmc.sample$aggregated.real.abund
+  else stop("Unknown 'type', must be 'pred' or 'real'.\n")
   nms <- strsplit(colnames(smp),"-")
   time <- as.numeric(sapply(nms, function(x)x[[1]]))
   start <- max(start, min(time))
@@ -858,7 +860,8 @@ updateTrend <- function(x, start, end, type="pred", order="lin"){
 #' (with the same name as \code{site.name} used in the original call to create \code{fit}). The other columns
 #' are factor variables defining other site aggregations.
 #' @param type Which site abundance augmentation should be used, \code{"pred"} for posterior
-#' predictive or \code{"rel"} for realized (just the posterior).
+#' predictive or \code{"real"} for realized (just the posterior).
+#' @param ci.prob Probability for HPD credible intervals. Defaults to 0.95
 #' 
 #' @return 
 #' A named list with names equal to the variables in \code{aggregation.data}. Each
@@ -867,10 +870,10 @@ updateTrend <- function(x, start, end, type="pred", order="lin"){
 #' \item{aggregation.summary}{A summary of the aggregation MCMC}
 #' @export
 #'  
-newAggregation <- function(fit, aggregation.data, type="pred"){
+newAggregation <- function(fit, aggregation.data, type="pred", ci.prob=0.95){
   #require(coda)
   if(type == "pred") xxx <- fit$mcmc.sample$pred.site.abund
-  if(type == "rel") xxx <- fit$mcmc.sample$rel.site.abund
+  if(type == "real") xxx <- fit$mcmc.sample$real.site.abund
   if(is.null(xxx)) stop("Site abundance data was not retained in the call to 'mcmc.aggreation()'\n Please re-run with 'keep.site.abund=TRUE'\n")
   site.name <- attr(fit,"site.name")
   time.name <- attr(fit,"time.name")
@@ -889,13 +892,13 @@ newAggregation <- function(fit, aggregation.data, type="pred"){
       ag.summary <- expand.grid(unique(site.idx[,time.name]), levels(factor(aggregation.data[,ag.names[i]])))
       colnames(ag.summary) <- c(time.name, ag.names[i])
       ag.summary$post.median.abund <- apply(a1,2,median)
-      hpd <- HPDinterval(a1, 0.9)
-      ag.summary$low90.hpd <- hpd[,1]
-      ag.summary$hi90.hpd <- hpd[,2]
+      hpd <- HPDinterval(a1, ci.prob)
+      ag.summary$low.hpd <- hpd[,1]
+      ag.summary$hi.hpd <- hpd[,2]
       if(type=="pred") {
         outlist[[i]] <- list(mcmc.sample=list(aggregated.pred.abund=a1), aggregation.pred.summary=ag.summary)
       } else  {
-        outlist[[i]] <- list(mcmc.sample=list(aggregated.rel.abund=a1), aggregation.rel.summary=ag.summary)
+        outlist[[i]] <- list(mcmc.sample=list(aggregated.real.abund=a1), aggregation.real.summary=ag.summary)
       }
       attr(outlist[[i]], "ln.adj") <- attr(fit, "ln.adj")
     }  
