@@ -797,6 +797,8 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
 
 ##############################################################
 #' @title Recalculate posterior predictive trend with a different time scale.
+#' @description Given a fitted model object (fit with 'keep.site.abund=TRUE') the function recalculates the posterior sample for an alternate 
+#' time scale than was originally specified in the model fitting MCMC sample.
 #' @param x An mcmc augmentation object produced by a call to \code{\link{mcmc.aggregate}} or 
 #' an element of the list produced by a call to \code{\link{newAggregation}}.
 #' @param start A new start value for the time span

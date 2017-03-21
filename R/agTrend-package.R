@@ -23,7 +23,9 @@
 #' 
 #' Maintainer: Devin S. Johnson <devin.johnson@@noaa.gov>
 #' 
-#' 
+#' @importFrom stats aggregate as.formula binomial coef dnorm glm lm median model.matrix 
+#' pnorm predict quantile residuals rgamma rnorm var
+#' @importFrom utils setTxtProgressBar txtProgressBar 
 NULL
 
 #' Steller sea lion survey data (nonpup counts) collected by the NOAA National Marine Mammal Laboratory in the western Distinct 
@@ -34,27 +36,13 @@ NULL
 #' @docType data
 #' @format
 #' 
-#' A data frame with 3408 observations on the following 12 variables.
+#' A data frame with 4118 observations on the following 5 variables.
 #' 
-#' \describe{ \item{site}{Site where survey was taken}
-#' 
-#' \item{Rookery}{1 if site is a rookery, 0 if else.}
+#' \describe{ \item{Site}{Site where survey was taken}
 #' 
 #' \item{Region}{Region in which the site is located}
 #' 
-#' \item{RegNum}{Numeric representation of the 'Region' variable}
-#' 
 #' \item{RCA}{Rookery Cluster Area in which the site belongs}
-#' 
-#' \item{Lat}{Latitude of the site}
-#' 
-#' \item{Long}{Longitude of the site}
-#' 
-#' \item{trend70}{1 if the site belongs to the group of 70s trend sites}
-#' 
-#' \item{trend90}{1 if the site belongs to the group of 90s trend sites}
-#' 
-#' \item{CH}{Equals 1 if the site is within critical habitat boundries, 0 else.}
 #' 
 #' \item{year}{Year in which the survey was conducted}
 #' 
@@ -63,7 +51,7 @@ NULL
 #' 
 #' @references Need a tech report / memo reference...
 #' 
-#' @source Alaska Ecosystems Program, National Marine Mammal Laboratory, Alaska
+#' @source Alaska Ecosystems Program, Marine Mammal Laboratory, Alaska
 #' Fisheries Science Center, National Marine Fisheries Service, NOAA, 7600 Sand
 #' Point Way, NE Seattle, WA 98115
 #' 
@@ -85,7 +73,7 @@ NULL
 #' 
 #' A data frame with 20 observations on the following 4 variables.
 #' 
-#' \describe{ \item{site}{Site where survey was taken}
+#' \describe{ \item{Site}{Site where survey was taken}
 #' 
 #' \item{Region}{Region in which the site is located}
 #' 
@@ -95,7 +83,7 @@ NULL
 #' 
 #' }
 #' 
-#' @source Alaska Ecosystems Program, National Marine Mammal Laboratory, Alaska
+#' @source Alaska Ecosystems Program, Marine Mammal Laboratory, Alaska
 #' Fisheries Science Center, National Marine Fisheries Service, NOAA, 7600 Sand
 #' Point Way, NE Seattle, WA 98115
 #' 
@@ -109,11 +97,11 @@ NULL
 
 #' Pup counts from surveys of the eastern Distict Populations Segment (eDPS) of Steller sea lions.
 #'  
-#' @name edpsPups
+#' @name edpsNonpups
 #' @docType data
 #' @format
 #' 
-#' A data frame with 35 observations on the following 3 variables.
+#' A data frame with 86 observations on the following 3 variables.
 #' 
 #' \describe{ 
 #' \item{region}{One of 4 eDPS subregions: southeast Alaska (SE AK), British Columbia (BC), Oregon (OR), and California (CA)}
@@ -123,7 +111,36 @@ NULL
 #' \item{count}{Aggregated count of pups of sites within each subregion.}
 #' }
 #' 
-#' @source Alaska Ecosystems Program, National Marine Mammal Laboratory, Alaska
+#' @source Alaska Ecosystems Program, Marine Mammal Laboratory, Alaska
+#' Fisheries Science Center, National Marine Fisheries Service, NOAA, 7600 Sand
+#' Point Way, NE Seattle, WA 98115
+#' 
+#' @keywords datasets
+#' 
+#' @examples
+#' 
+#' data(edpsPups)
+#' head(edpsPups)
+NULL
+
+
+#' Pup counts from surveys of the eastern Distict Populations Segment (eDPS) of Steller sea lions.
+#'  
+#' @name edpsPups
+#' @docType data
+#' @format
+#' 
+#' A data frame with 34 observations on the following 3 variables.
+#' 
+#' \describe{ 
+#' \item{region}{One of 4 eDPS subregions: southeast Alaska (SE AK), British Columbia (BC), Oregon (OR), and California (CA)}
+#' 
+#' \item{year}{Year the survey was conducted}
+#' 
+#' \item{count}{Aggregated count of pups of sites within each subregion.}
+#' }
+#' 
+#' @source Alaska Ecosystems Program, Marine Mammal Laboratory, Alaska
 #' Fisheries Science Center, National Marine Fisheries Service, NOAA, 7600 Sand
 #' Point Way, NE Seattle, WA 98115
 #' 
@@ -141,10 +158,10 @@ NULL
 #' @docType data
 #' @format
 #' 
-#' A data frame with 35 observations on the following 3 variables.
+#' A data frame with 694 observations on the following 5 variables.
 #' 
 #' \describe{ 
-#' \item{site}{Surveyed sites in the wDPS}
+#' \item{Site}{Surveyed sites in the wDPS}
 #' 
 #' \item{Region}{Region of the surveyed site}
 #' 
