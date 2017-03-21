@@ -7,15 +7,16 @@
 Population Segment of the stock (wDPS).}
 \format{A data frame with 4118 observations on the following 5 variables.
 
-\describe{ \item{Site}{Site where survey was taken}
+\describe{
+\item{SITE}{Site where survey was taken}
 
-\item{Region}{Region in which the site is located}
+\item{REGION}{Region in which the site is located}
 
 \item{RCA}{Rookery Cluster Area in which the site belongs}
 
-\item{year}{Year in which the survey was conducted}
+\item{YEAR}{Year in which the survey was conducted}
 
-\item{count}{The count of nonpups observed}
+\item{COUNT}{The count of nonpups observed}
 }}
 \source{
 Alaska Ecosystems Program, Marine Mammal Laboratory, Alaska

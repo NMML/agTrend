@@ -6,12 +6,14 @@
 \title{Pup counts from surveys of the eastern Distict Populations Segment (eDPS) of Steller sea lions.}
 \format{A data frame with 86 observations on the following 3 variables.
 
-\describe{ 
-\item{region}{One of 4 eDPS subregions: southeast Alaska (SE AK), British Columbia (BC), Oregon (OR), and California (CA)}
+\describe{
+\item{SITE}{Site where the survey was taken.}
 
-\item{year}{Year the survey was conducted}
+\item{REGION}{One of 4 eDPS subregions: southeast Alaska (SE AK), British Columbia (BC), Oregon (OR), and California (CA)}
 
-\item{count}{Aggregated count of pups of sites within each subregion.}
+\item{YEAR}{Year the survey was conducted}
+
+\item{COUNT}{Aggregated count of pups of sites within each subregion.}
 }}
 \source{
 Alaska Ecosystems Program, Marine Mammal Laboratory, Alaska
@@ -23,7 +25,7 @@ Pup counts from surveys of the eastern Distict Populations Segment (eDPS) of Ste
 }
 \examples{
 
-data(edpsPups)
-head(edpsPups)
+data(edpsNonpups)
+head(edpsNonpups)
 }
 \keyword{datasets}

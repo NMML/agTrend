@@ -7,13 +7,14 @@
 oblique angles vs. vertical medium-format photos.}
 \format{A data frame with 20 observations on the following 4 variables.
 
-\describe{ \item{Site}{Site where survey was taken}
+\describe{
+\item{SITE}{Site where survey was taken}
 
-\item{Region}{Region in which the site is located}
+\item{REGION}{Region in which the site is located}
 
-\item{X2000OBL}{Survey count taken from oblique photo source}
+\item{OBLIQUE}{Survey count taken from oblique photo source}
 
-\item{X2000VERT}{Survey count taken from vertical medium-format photo source}
+\item{VERTICAL}{Survey count taken from vertical medium-format photo source}
 
 }}
 \source{
