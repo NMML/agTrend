@@ -38,15 +38,16 @@ NULL
 #' 
 #' A data frame with 4118 observations on the following 5 variables.
 #' 
-#' \describe{ \item{Site}{Site where survey was taken}
+#' \describe{
+#' \item{SITE}{Site where survey was taken}
 #' 
-#' \item{Region}{Region in which the site is located}
+#' \item{REGION}{Region in which the site is located}
 #' 
 #' \item{RCA}{Rookery Cluster Area in which the site belongs}
 #' 
-#' \item{year}{Year in which the survey was conducted}
+#' \item{YEAR}{Year in which the survey was conducted}
 #' 
-#' \item{count}{The count of nonpups observed}
+#' \item{COUNT}{The count of nonpups observed}
 #' }
 #' 
 #' @references Need a tech report / memo reference...
@@ -73,13 +74,14 @@ NULL
 #' 
 #' A data frame with 20 observations on the following 4 variables.
 #' 
-#' \describe{ \item{Site}{Site where survey was taken}
+#' \describe{
+#' \item{SITE}{Site where survey was taken}
 #' 
-#' \item{Region}{Region in which the site is located}
+#' \item{REGION}{Region in which the site is located}
 #' 
-#' \item{X2000OBL}{Survey count taken from oblique photo source}
+#' \item{OBLIQUE}{Survey count taken from oblique photo source}
 #' 
-#' \item{X2000VERT}{Survey count taken from vertical medium-format photo source}
+#' \item{VERTICAL}{Survey count taken from vertical medium-format photo source}
 #' 
 #' }
 #' 
@@ -103,12 +105,14 @@ NULL
 #' 
 #' A data frame with 86 observations on the following 3 variables.
 #' 
-#' \describe{ 
-#' \item{region}{One of 4 eDPS subregions: southeast Alaska (SE AK), British Columbia (BC), Oregon (OR), and California (CA)}
+#' \describe{
+#' \item{SITE}{Site where the survey was taken.}
 #' 
-#' \item{year}{Year the survey was conducted}
+#' \item{REGION}{One of 4 eDPS subregions: southeast Alaska (SE AK), British Columbia (BC), Oregon (OR), and California (CA)}
 #' 
-#' \item{count}{Aggregated count of pups of sites within each subregion.}
+#' \item{YEAR}{Year the survey was conducted}
+#' 
+#' \item{COUNT}{Aggregated count of pups of sites within each subregion.}
 #' }
 #' 
 #' @source Alaska Ecosystems Program, Marine Mammal Laboratory, Alaska
@@ -119,8 +123,8 @@ NULL
 #' 
 #' @examples
 #' 
-#' data(edpsPups)
-#' head(edpsPups)
+#' data(edpsNonpups)
+#' head(edpsNonpups)
 NULL
 
 
@@ -132,12 +136,14 @@ NULL
 #' 
 #' A data frame with 34 observations on the following 3 variables.
 #' 
-#' \describe{ 
-#' \item{region}{One of 4 eDPS subregions: southeast Alaska (SE AK), British Columbia (BC), Oregon (OR), and California (CA)}
+#' \describe{
+#' \item{SITE}{Site where the survey was conducted.}
 #' 
-#' \item{year}{Year the survey was conducted}
+#' \item{REGION}{One of 4 eDPS subregions: southeast Alaska (SE AK), British Columbia (BC), Oregon (OR), and California (CA)}
 #' 
-#' \item{count}{Aggregated count of pups of sites within each subregion.}
+#' \item{YEAR}{Year the survey was conducted}
+#' 
+#' \item{COUNT}{Aggregated count of pups of sites within each subregion.}
 #' }
 #' 
 #' @source Alaska Ecosystems Program, Marine Mammal Laboratory, Alaska
@@ -161,15 +167,15 @@ NULL
 #' A data frame with 694 observations on the following 5 variables.
 #' 
 #' \describe{ 
-#' \item{Site}{Surveyed sites in the wDPS}
+#' \item{SITE}{Surveyed sites in the wDPS}
 #' 
-#' \item{Region}{Region of the surveyed site}
+#' \item{REGION}{Region of the surveyed site}
 #' 
 #' \item{RCA}{Rookery cluster area of the surveyed site}
 #' 
-#' \item{year}{Survey year}
+#' \item{YEAR}{Survey year}
 #' 
-#' \item{count}{Survey count of pups at each site}
+#' \item{COUNT}{Survey count of pups at each site}
 #' }
 #' 
 #' @source Alaska Ecosystems Program, National Marine Mammal Laboratory, Alaska
@@ -193,12 +199,8 @@ NULL
     version <- info$Version
     date <- info$Date
     packageStartupMessage(
-      paste("\n\n",paste(package, version, paste("(",date, ")", sep=""), "\n\n"), 
-            "Type 'demo(package='agTrend')' to see a list of demos for this package.\n\n",
-            "The raw code for the demos can be found by typing:\n",
-            "\t system.file('demo', package='agTrend')\n\n",
-            "To access the help files type:\n",
-            "\t help('agTrend-package')\n\n"
+      paste("\n\n",paste(package, version, paste("(",date, ")", sep=""), "\n"), 
+            "A demo is available at"
             )
     )
   }

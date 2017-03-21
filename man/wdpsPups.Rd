@@ -7,15 +7,15 @@
 \format{A data frame with 694 observations on the following 5 variables.
 
 \describe{ 
-\item{Site}{Surveyed sites in the wDPS}
+\item{SITE}{Surveyed sites in the wDPS}
 
-\item{Region}{Region of the surveyed site}
+\item{REGION}{Region of the surveyed site}
 
 \item{RCA}{Rookery cluster area of the surveyed site}
 
-\item{year}{Survey year}
+\item{YEAR}{Survey year}
 
-\item{count}{Survey count of pups at each site}
+\item{COUNT}{Survey count of pups at each site}
 }}
 \source{
 Alaska Ecosystems Program, National Marine Mammal Laboratory, Alaska
