@@ -14,7 +14,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-[![Travis-CI Build Status](https://travis-ci.org/NMML/crawl.svg?branch=devel)](https://travis-ci.org/NMML/crawl)
+<!-- [![Travis-CI Build Status](https://travis-ci.org/NMML/crawl.svg?branch=devel)](https://travis-ci.org/NMML/crawl) -->
 
 ## Fit regional trends to site-specific abundence data
 
@@ -98,9 +98,9 @@ Finally, before we run the MCMC, the last step is to create a data set of upper 
 upper = wdpsNonpups %>% group_by(SITE) %>% summarize(upper=3*max(COUNT)) %>% ungroup()
 ```
 
-Now we begin the MCMC sampling using the `mcmc.aggregate` function. This function performs the site augmentation and samples from the posterior predictive distribution of the count data. Note: Only a small number of MCMC iterations are shown here. For a more robust analysis change to burn=1000 and iter=5000.
+Now we begin the MCMC sampling using the `mcmc.aggregate` function. This function performs the site augmentation and samples from the posterior predictive distribution of the count data. **Note: Only a small number of MCMC iterations are shown here. For a more robust analysis change to burn=1000 and iter=5000.**
 
-```{r}
+```{r, results=FALSE}
 set.seed(123) 
 fit <- mcmc.aggregate(start=1990, end=2026, data=wdpsNonpups, obs.formula=~obl-1, model.data=wdpsModels, 
                       rw.order=list(omega=2), aggregation="REGION",
@@ -109,112 +109,23 @@ fit <- mcmc.aggregate(start=1990, end=2026, data=wdpsNonpups, obs.formula=~obl-1
                       keep.site.param=TRUE, keep.site.abund=TRUE, keep.obs.param=TRUE)
 ```
 
-### Look at the results
+Let's look at the results
 ```{r} 
 fitdat <- fit$aggregation.pred.summary
 ```
-# Compute trends for just 2000-2012
+Compute trends for just 2000-2016
 ```{r}
-trend2000 <- updateTrend(fit, 2000, 2012, "pred")
+trend2006 = updateTrend(fit, 2003, 2016, "pred")
 ```
-# Change to % growth form
+Change to percent growth form
 ```{r}
-growth2000 <- mcmc(100*(exp(trend2000[,7:12])-1))
-summary(growth2000)
+growth2006 = mcmc(100*(exp(trend2006[,7:12])-1))
+summary(growth2006)
 # Obtain posterior median % growth and 90% credible interval
 print(
   data.frame(
-    post.median=round(apply(growth2000, 2, median),2),
-    HPD.90=round(HPDinterval(growth2000, 0.90),2)
+    post.median=round(apply(growth2006, 2, median),2),
+    HPD.90=round(HPDinterval(growth2006, 0.95),2)
   )
 )
 ```
-# Add fitted 2000-2012 trend to aggregation summary
-b <- apply(trend2000, 2, median)
-X <- model.matrix(~(Region-1) + (Region-1):(year), data=fitdat)
-fitdat$trend2000 <- apply(
-  apply(as.matrix(trend2000), 1, FUN=function(b,Mat){as.vector(exp(Mat%*%b))}, Mat=X), 
-  1, median
-)
-fitdat$trend2000[fitdat$year<2000] <- NA
-
-# Make a plot of the results (requires ggplot2 package)
-library(ggplot2)
-
-envCol = "#2b83ba"
-lnCol = "#d7191c"
-
-
-
-surv.yrs <- unique(fit$original.data$year)
-ag.sum.data <- fit$aggregation.pred.summary
-real.dat <- fit$aggregation.real.summary
-real.dat <- real.dat[real.dat$year %in% surv.yrs,]
-colnames(real.dat)[3:5] <- paste(colnames(real.dat)[3:5], "REAL", sep="")
-ag.sum.data <- merge(ag.sum.data, real.dat, all=TRUE)
-ag.nm <- "Region"
-ag.sum.data[,ag.nm] <- factor(ag.sum.data[,ag.nm])
-b <- apply(trend2000, 2, median)
-X <- model.matrix(~(ag.sum.data[,ag.nm]-1) + (ag.sum.data[,ag.nm]-1):(year), data=ag.sum.data)
-ag.sum.data$trend2000 <- apply(apply(as.matrix(trend2000), 1, FUN=function(b,Mat){as.vector(exp(Mat%*%b))}, Mat=X), 1, median)
-ag.sum.data$trend2000[ag.sum.data$year<2000] <- NA
-ag.sum.data$Region = factor(ag.sum.data$Region, 
-                            levels=c("W ALEU", "C ALEU", "E ALEU", "W GULF", "C GULF", "E GULF"))
-fig1 <- ggplot(ag.sum.data, aes(x=year, y=post.median.abund)) + 
-  facet_wrap(~Region, ncol=2) +
-  geom_line() + 
-  geom_ribbon(aes(ymin=low.hpd, ymax=hi.hpd), alpha=0.4, fill=envCol) + 
-  geom_line(aes(y=trend2000), color=lnCol, lwd=1.5, data=ag.sum.data[!is.na(ag.sum.data$trend2000),]) + 
-  geom_pointrange(aes(y=post.median.abundREAL, ymin=low.hpdREAL, ymax=hi.hpdREAL), data=ag.sum.data[!is.na(ag.sum.data$post.median.abundREAL),]) + 
-  xlab("\nYear") + ylab("Aggregated count\n") + 
-  theme_bw() + theme(panel.grid=element_blank(), text=element_text(size=14)) 
-
-print(fig1)
-# ggsave(fig1, file="figure/figure1.pdf", width=6.5, height=8)
-
-suppressMessages(library(gridExtra))
-
-site.pred <- fit$mcmc.sample$pred.site.abund
-yr.site <- expand.grid(c(1990:2012), levels(wdpsNonpups$site))
-colnames(yr.site) <- c("year","site")
-yr.site <- merge(yr.site, wdpsModels, by="site")
-
-# GLACIER in the E GULF
-glacier.pred <- mcmc(site.pred[,yr.site$site=="GLACIER"])
-glacier.dat <- fit$original.data[fit$original.data$site=="GLACIER",]
-glacier.plot <- ggplot() + 
-  geom_ribbon(aes(ymin=lower, ymax=upper, x=c(1990:2012)), data=data.frame(HPDinterval(glacier.pred)), alpha=0.4, fill=envCol) +
-  geom_ribbon(aes(ymin=lower, ymax=upper, x=c(1990:2012)), data=data.frame(HPDinterval(glacier.pred, 0.5)), alpha=0.4, fill=envCol) +
-  geom_line(aes(x=c(1990:2012), y=apply(glacier.pred, 2, median))) +
-  geom_point(aes(y=count, x=year), data=glacier.dat, size=3) +
-  xlab("Year") + ylab("Survey count") + ggtitle("(a) Counts at Glacier\n") +
-  theme_bw() + theme(panel.grid=element_blank(), text=element_text(size=12), plot.title=element_text(size=12))
-
-# Zero inflation process for GLACIER
-glacierAV <- mcmc(fit$mcmc.sample$prob.avail[,yr.site$site[yr.site$avail!="none"]=="GLACIER"])
-glacier.av <- ggplot() + 
-  geom_ribbon(aes(ymin=lower, ymax=upper, x=c(1990:2012)), data=data.frame(HPDinterval(glacierAV)), alpha=0.4, fill=envCol) +
-  geom_ribbon(aes(ymin=lower, ymax=upper, x=c(1990:2012)), data=data.frame(HPDinterval(glacierAV, 0.5)), alpha=0.4, fill=envCol) +
-  geom_line(aes(x=c(1990:2012), y=apply(glacierAV, 2, median))) +
-  geom_point(aes(y=1.0*c(glacier.dat$count>0), x=year), data=glacier.dat, size=3) +
-  xlab("Year") + ylab("Probability survey count > 0") + ggtitle("(b) Availability at Glacier\n") +
-  theme_bw() + theme(panel.grid=element_blank(), text=element_text(size=12), plot.title=element_text(size=12))
-
-# MARMOT in the C ALEU
-marmot.pred <- mcmc(site.pred[,yr.site$site=="MARMOT"])
-marmot.dat <- fit$original.data[fit$original.data$site=="MARMOT",]
-marmot.plot <- ggplot() + 
-  geom_ribbon(aes(ymin=lower, ymax=upper, x=c(1990:2012)), data=data.frame(HPDinterval(marmot.pred)), alpha=0.4, fill=envCol) +
-  geom_ribbon(aes(ymin=lower, ymax=upper, x=c(1990:2012)), data=data.frame(HPDinterval(marmot.pred, 0.5)), alpha=0.4, fill=envCol) +
-  geom_line(aes(x=c(1990:2012), y=apply(marmot.pred, 2, median))) +
-  geom_point(aes(y=count, x=year), data=marmot.dat, size=3) +
-  xlab("Year") + ylab("Survey count") + ggtitle("(c) Counts at Marmot\n") + 
-  theme_bw() + theme(panel.grid=element_blank(), text=element_text(size=12), plot.title=element_text(size=12))
-
-fig2 <- arrangeGrob(glacier.plot, glacier.av, marmot.plot, ncol=2)
-print(fig2)
-# ggsave(fig2, file="figure/figure2.pdf", width=6.5, height=6.5)
-
-
-# Save the results-- uncomment to save
-# save(list=ls(), file="wdpsNonpupsDemoResults.RData", compress=TRUE)

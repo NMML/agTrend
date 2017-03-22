@@ -117,7 +117,7 @@ Finally, before we run the MCMC, the last step is to create a data set of upper 
 upper = wdpsNonpups %>% group_by(SITE) %>% summarize(upper=3*max(COUNT)) %>% ungroup()
 ```
 
-Now we begin the MCMC sampling using the `mcmc.aggregate` function. This function performs the site augmentation and samples from the posterior predictive distribution of the count data. Note: Only a small number of MCMC iterations are shown here. For a more robust analysis change to burn=1000 and iter=5000.
+Now we begin the MCMC sampling using the `mcmc.aggregate` function. This function performs the site augmentation and samples from the posterior predictive distribution of the count data. **Note: Only a small number of MCMC iterations are shown here. For a more robust analysis change to burn=1000 and iter=5000.**
 
 ``` r
 set.seed(123) 
@@ -127,7 +127,7 @@ fit <- mcmc.aggregate(start=1990, end=2026, data=wdpsNonpups, obs.formula=~obl-1
                       burn=50, iter=100, thin=5, prior.list=prior.list, upper=upper, 
                       keep.site.param=TRUE, keep.site.abund=TRUE, keep.obs.param=TRUE)
 #> 
-#> Approximate time to completion  1.4 minutes... 
+#> Approximate time to completion  1.2 minutes... 
 #> 
 #> 
   |                                                                       
@@ -436,25 +436,23 @@ fit <- mcmc.aggregate(start=1990, end=2026, data=wdpsNonpups, obs.formula=~obl-1
   |=================================================================| 100%
 ```
 
-### Look at the results
+Let's look at the results
 
 ``` r
 fitdat <- fit$aggregation.pred.summary
 ```
 
-Compute trends for just 2000-2012
-=================================
+Compute trends for just 2000-2016
 
 ``` r
-trend2000 <- updateTrend(fit, 2000, 2012, "pred")
+trend2006 = updateTrend(fit, 2003, 2016, "pred")
 ```
 
-Change to % growth form
-=======================
+Change to percent growth form
 
 ``` r
-growth2000 <- mcmc(100*(exp(trend2000[,7:12])-1))
-summary(growth2000)
+growth2006 = mcmc(100*(exp(trend2006[,7:12])-1))
+summary(growth2006)
 #> 
 #> Iterations = 1:100
 #> Thinning interval = 1 
@@ -465,77 +463,34 @@ summary(growth2000)
 #>    plus standard error of the mean:
 #> 
 #>                  Mean     SD Naive SE Time-series SE
-#> C ALEU (Trend)  5.644 0.8245  0.08245         0.2505
-#> C GULF (Trend)  9.114 0.7840  0.07840         0.0784
-#> E ALEU (Trend)  9.358 0.8340  0.08340         0.1001
-#> E GULF (Trend) 12.442 1.5333  0.15333         0.1923
-#> W ALEU (Trend) -2.379 2.0354  0.20354         0.2035
-#> W GULF (Trend) 10.397 1.1541  0.11541         0.2609
+#> C ALEU (Trend)  2.180 0.9093  0.09093        0.23691
+#> C GULF (Trend)  6.563 0.6461  0.06461        0.08083
+#> E ALEU (Trend)  3.601 0.7187  0.07187        0.09984
+#> E GULF (Trend)  7.453 1.5409  0.15409        0.20988
+#> W ALEU (Trend) -2.663 1.7765  0.17765        0.17765
+#> W GULF (Trend)  5.381 0.7341  0.07341        0.09077
 #> 
 #> 2. Quantiles for each variable:
 #> 
-#>                  2.5%    25%    50%    75%  97.5%
-#> C ALEU (Trend)  4.252  5.071  5.616  6.207  7.408
-#> C GULF (Trend)  7.706  8.623  9.068  9.604 10.533
-#> E ALEU (Trend)  7.807  8.820  9.294  9.943 11.087
-#> E GULF (Trend)  9.572 11.384 12.302 13.384 15.594
-#> W ALEU (Trend) -5.864 -3.750 -2.399 -1.096  1.714
-#> W GULF (Trend)  8.315  9.556 10.439 11.306 12.549
+#>                   2.5%    25%    50%    75%   97.5%
+#> C ALEU (Trend)  0.4052  1.597  2.160  2.650  4.2380
+#> C GULF (Trend)  5.3525  6.097  6.518  6.952  7.9334
+#> E ALEU (Trend)  2.4247  3.076  3.547  4.007  5.1194
+#> E GULF (Trend)  4.6746  6.385  7.363  8.413 10.6180
+#> W ALEU (Trend) -5.8824 -3.685 -2.682 -1.758  0.7968
+#> W GULF (Trend)  3.8947  4.904  5.420  5.872  6.6947
 # Obtain posterior median % growth and 90% credible interval
 print(
   data.frame(
-    post.median=round(apply(growth2000, 2, median),2),
-    HPD.90=round(HPDinterval(growth2000, 0.90),2)
+    post.median=round(apply(growth2006, 2, median),2),
+    HPD.90=round(HPDinterval(growth2006, 0.95),2)
   )
 )
 #>                post.median HPD.90.lower HPD.90.upper
-#> C ALEU (Trend)        5.62         4.42         6.97
-#> C GULF (Trend)        9.07         8.10        10.49
-#> E ALEU (Trend)        9.29         8.40        11.10
-#> E GULF (Trend)       12.30        10.09        15.14
-#> W ALEU (Trend)       -2.40        -6.22         0.31
-#> W GULF (Trend)       10.44         8.45        12.09
+#> C ALEU (Trend)        2.16         0.59         4.41
+#> C GULF (Trend)        6.52         5.50         8.06
+#> E ALEU (Trend)        3.55         2.42         5.16
+#> E GULF (Trend)        7.36         4.49        10.52
+#> W ALEU (Trend)       -2.68        -6.15         0.61
+#> W GULF (Trend)        5.42         3.73         6.72
 ```
-
-Add fitted 2000-2012 trend to aggregation summary
-=================================================
-
-b &lt;- apply(trend2000, 2, median) X &lt;- model.matrix(~(Region-1) + (Region-1):(year), data=fitdat) fitdat$trend2000 &lt;- apply(  apply(as.matrix(trend2000), 1, FUN=function(b,Mat){as.vector(exp(Mat%\*%b))}, Mat=X),  1, median ) fitdat$trend2000\[fitdat$year&lt;2000\] &lt;- NA
-
-Make a plot of the results (requires ggplot2 package)
-=====================================================
-
-library(ggplot2)
-
-envCol = "\#2b83ba" lnCol = "\#d7191c"
-
-surv.yrs &lt;- unique(fit*o**r**i**g**i**n**a**l*.*d**a**t**a*year) ag.sum.data &lt;- fit*a**g**g**r**e**g**a**t**i**o**n*.*p**r**e**d*.*s**u**m**m**a**r**y**r**e**a**l*.*d**a**t* &lt; −*f**i**t*aggregation.real.summary real.dat &lt;- real.dat\[real.dat$year %in% surv.yrs,\] colnames(real.dat)\[3:5\] &lt;- paste(colnames(real.dat)\[3:5\], "REAL", sep="") ag.sum.data &lt;- merge(ag.sum.data, real.dat, all=TRUE) ag.nm &lt;- "Region" ag.sum.data\[,ag.nm\] &lt;- factor(ag.sum.data\[,ag.nm\]) b &lt;- apply(trend2000, 2, median) X &lt;- model.matrix(~(ag.sum.data\[,ag.nm\]-1) + (ag.sum.data\[,ag.nm\]-1):(year), data=ag.sum.data) ag.sum.data$trend2000 &lt;- apply(apply(as.matrix(trend2000), 1, FUN=function(b,Mat){as.vector(exp(Mat%\*%b))}, Mat=X), 1, median) ag.sum.data$trend2000\[ag.sum.data$year&lt;2000\] &lt;- NA ag.sum.data*R**e**g**i**o**n* = *f**a**c**t**o**r*(*a**g*.*s**u**m*.*d**a**t**a*Region, levels=c("W ALEU", "C ALEU", "E ALEU", "W GULF", "C GULF", "E GULF")) fig1 &lt;- ggplot(ag.sum.data, aes(x=year, y=post.median.abund)) + facet\_wrap(~Region, ncol=2) + geom\_line() + geom\_ribbon(aes(ymin=low.hpd, ymax=hi.hpd), alpha=0.4, fill=envCol) + geom\_line(aes(y=trend2000), color=lnCol, lwd=1.5, data=ag.sum.data\[!is.na(ag.sum.data$trend2000),\]) + geom\_pointrange(aes(y=post.median.abundREAL, ymin=low.hpdREAL, ymax=hi.hpdREAL), data=ag.sum.data\[!is.na(ag.sum.data$post.median.abundREAL),\]) + xlab("") + ylab("Aggregated count") + theme\_bw() + theme(panel.grid=element\_blank(), text=element\_text(size=14))
-
-print(fig1) \# ggsave(fig1, file="figure/figure1.pdf", width=6.5, height=8)
-
-suppressMessages(library(gridExtra))
-
-site.pred &lt;- fit*m**c**m**c*.*s**a**m**p**l**e*pred.site.abund yr.site &lt;- expand.grid(c(1990:2012), levels(wdpsNonpups$site)) colnames(yr.site) &lt;- c("year","site") yr.site &lt;- merge(yr.site, wdpsModels, by="site")
-
-GLACIER in the E GULF
-=====================
-
-glacier.pred &lt;- mcmc(site.pred\[,yr.site$site=="GLACIER"\]) glacier.dat &lt;- fit*o**r**i**g**i**n**a**l*.*d**a**t**a*\[*f**i**t*original.data$site=="GLACIER",\] glacier.plot &lt;- ggplot() + geom\_ribbon(aes(ymin=lower, ymax=upper, x=c(1990:2012)), data=data.frame(HPDinterval(glacier.pred)), alpha=0.4, fill=envCol) + geom\_ribbon(aes(ymin=lower, ymax=upper, x=c(1990:2012)), data=data.frame(HPDinterval(glacier.pred, 0.5)), alpha=0.4, fill=envCol) + geom\_line(aes(x=c(1990:2012), y=apply(glacier.pred, 2, median))) + geom\_point(aes(y=count, x=year), data=glacier.dat, size=3) + xlab("Year") + ylab("Survey count") + ggtitle("(a) Counts at Glacier") + theme\_bw() + theme(panel.grid=element\_blank(), text=element\_text(size=12), plot.title=element\_text(size=12))
-
-Zero inflation process for GLACIER
-==================================
-
-glacierAV &lt;- mcmc(fit*m**c**m**c*.*s**a**m**p**l**e*prob.avail\[,yr.site*s**i**t**e*\[*y**r*.*s**i**t**e*avail!="none"\]=="GLACIER"\]) glacier.av &lt;- ggplot() + geom\_ribbon(aes(ymin=lower, ymax=upper, x=c(1990:2012)), data=data.frame(HPDinterval(glacierAV)), alpha=0.4, fill=envCol) + geom\_ribbon(aes(ymin=lower, ymax=upper, x=c(1990:2012)), data=data.frame(HPDinterval(glacierAV, 0.5)), alpha=0.4, fill=envCol) + geom\_line(aes(x=c(1990:2012), y=apply(glacierAV, 2, median))) + geom\_point(aes(y=1.0\*c(glacier.dat$count&gt;0), x=year), data=glacier.dat, size=3) + xlab("Year") + ylab("Probability survey count &gt; 0") + ggtitle("(b) Availability at Glacier") + theme\_bw() + theme(panel.grid=element\_blank(), text=element\_text(size=12), plot.title=element\_text(size=12))
-
-MARMOT in the C ALEU
-====================
-
-marmot.pred &lt;- mcmc(site.pred\[,yr.site$site=="MARMOT"\]) marmot.dat &lt;- fit*o**r**i**g**i**n**a**l*.*d**a**t**a*\[*f**i**t*original.data$site=="MARMOT",\] marmot.plot &lt;- ggplot() + geom\_ribbon(aes(ymin=lower, ymax=upper, x=c(1990:2012)), data=data.frame(HPDinterval(marmot.pred)), alpha=0.4, fill=envCol) + geom\_ribbon(aes(ymin=lower, ymax=upper, x=c(1990:2012)), data=data.frame(HPDinterval(marmot.pred, 0.5)), alpha=0.4, fill=envCol) + geom\_line(aes(x=c(1990:2012), y=apply(marmot.pred, 2, median))) + geom\_point(aes(y=count, x=year), data=marmot.dat, size=3) + xlab("Year") + ylab("Survey count") + ggtitle("(c) Counts at Marmot") + theme\_bw() + theme(panel.grid=element\_blank(), text=element\_text(size=12), plot.title=element\_text(size=12))
-
-fig2 &lt;- arrangeGrob(glacier.plot, glacier.av, marmot.plot, ncol=2) print(fig2) \# ggsave(fig2, file="figure/figure2.pdf", width=6.5, height=6.5)
-
-Save the results-- uncomment to save
-====================================
-
-save(list=ls(), file="wdpsNonpupsDemoResults.RData", compress=TRUE)
-===================================================================
