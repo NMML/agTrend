@@ -17,7 +17,7 @@ allows incorporation of both parameter uncertainty as well as uncertainty due to
 \tabular{ll}{ Package: \tab agTrend\cr 
 Type: \tab Package\cr 
 Version: \tab 0.17.7\cr 
-Date: \tab 2017-03-20\cr 
+Date: \tab 2017-03-23\cr 
 License: \tab Unlimited\cr 
 LazyLoad: \tab
 yes\cr }
