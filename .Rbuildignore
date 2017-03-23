@@ -4,3 +4,5 @@
 ^demo_results$
 ^\.git
 ^\\.gitignore$
+^README.Rmd$
+^README.md$

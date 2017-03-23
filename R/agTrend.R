@@ -130,6 +130,7 @@ getSiteREInits <- function(data, abund.name, site.name, time.name, ln.adj,
   #require(mgcv)
   
   data$y <- log(data[,abund.name]+ln.adj)
+  data$y = ifelse(data$y==0, data$y+0.5, data$y)
   omega <- NULL
   tau <- NULL
   zeta <- NULL
@@ -145,8 +146,10 @@ getSiteREInits <- function(data, abund.name, site.name, time.name, ln.adj,
       zeta <- c(zeta, 1/var(residuals(fit)))
     }
     else{
-      form <- as.formula(paste("y ~ s(", time.name,")", sep=""))
-      fit <- gam(form, data=data, subset=(data[,site.name]==i))
+      k = ceiling(length(data$y[data[,site.name]==i])/2)
+      form <- as.formula(paste("y ~ s(", time.name,", k=",k,")", sep=""))
+      fit <- try(gam(form, data=data, subset=(data[,site.name]==i)))
+      # if(inherits(fit, "try-error")) browser()
       omega.tmp <- predict(fit, newdata=newdata)
       lm.fit <- lm(omega.tmp~newdata[,1])
       omega.tmp <- matrix(residuals(lm.fit), ncol=1)
