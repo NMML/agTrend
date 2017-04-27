@@ -139,7 +139,7 @@ getSiteREInits <- function(data, abund.name, site.name, time.name, ln.adj,
   for(i in levels(data[,site.name])){
     models <- model.data[model.data[,site.name]==i,]
     if(models$trend%in%c("const","lin")){
-      if(models$trend=="const") fit <- lm(data[data[,site.name]==i,"y"]~1, )
+      if(models$trend=="const") fit <- lm(data[data[,site.name]==i,"y"]~1)
       else fit <- lm(data[data[,site.name]==i,"y"]~data[data[,site.name]==i,time.name])
       omega <- c(omega, rep(0,nrow(newdata)))
       b <- c(b, as.vector(coef(fit)))
@@ -423,7 +423,9 @@ mcmc.aggregate <- function(start, end, data, obs.formula=NULL, aggregation, mode
   }
   # Precision for epsilon
   if(!missing(sig.abund)) {
-    Qeps <- Diagonal(x=1/log(1+(data[,sig.abund]/data[,abund.name])^2))
+    tau_ln_abund = 1/log(1+(data[,sig.abund]/data[,abund.name])^2)
+    tau_ln_abund = ifelse(tau_ln_abund>1.0E8, 1.0E8, tau_ln_abund)
+    Qeps <- Diagonal(x=tau_ln_abund)
   } else {Qeps <- Diagonal(x=rep(1.0E8, length(y)))}
   # Precision for omega and alpha
   Q0.omega.s <- Matrix(iar.Q(n.year, omega.order))
