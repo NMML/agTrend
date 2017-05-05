@@ -22,9 +22,8 @@ library(agTrend)
 #> This is mgcv 1.8-17. For overview type 'help("mgcv-package")'.
 #> Loading required package: truncnorm
 #> 
-#> 
-#>  agTrend 0.17.7 (2017-03-20) 
-#>  A demo is available at
+#>  agTrend 0.17.7 (2017-03-23) 
+#>  A demo is available at https://github.com/NMML/agTrend
 library(dplyr)
 #> 
 #> Attaching package: 'dplyr'
@@ -102,9 +101,9 @@ The next step involves creating a prior distribution list for MCMC site updating
 
 ``` r
 data("photoCorrection")
-photoCorrection %>% mutate(ratio = OBLIQUE/VERTICAL) -> photoCorrection
-gamma.0 = photoCorrection %>% summarize(mean(ratio)) %>% as.double()
-gamma.se = photoCorrection %>% summarize(sd(ratio)/sqrt(n())) %>% as.double()
+photoCorrection %>% mutate(log_ratio = OBLIQUE/VERTICAL) -> photoCorrection
+gamma.0 = photoCorrection %>% summarize(mean(log_ratio)) %>% as.double()
+gamma.se = photoCorrection %>% summarize(sd(log_ratio)/sqrt(n())) %>% as.double()
 
 prior.list=defaultPriorList(trend.limit=0.2, model.data=wdpsModels,
                             gamma.mean=gamma.0, gamma.prec=1/gamma.se^2)
@@ -126,7 +125,7 @@ fit <- mcmc.aggregate(start=1990, end=2026, data=wdpsNonpups, obs.formula=~obl-1
                       burn=50, iter=100, thin=5, prior.list=prior.list, upper=upper, 
                       keep.site.param=TRUE, keep.site.abund=TRUE, keep.obs.param=TRUE)
 #> 
-#> Approximate time to completion  1.2 minutes... 
+#> Approximate time to completion  1 minutes... 
 #> 
 #> 
   |                                                                       
