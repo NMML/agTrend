@@ -84,9 +84,9 @@ head(wdpsModels)
 The next step involves creating a prior distribution list for MCMC site updating. The prior distribtuions for the trend parameters will enforce the assumption that site trends unlikely to be greater than 20% or less that about -17%. More exactly, for $r = 0.2$, $Pr{exp(-ln(1+r))-1 < \mbox{trend} < r} = 0.95$. In addition, we create an informative gamma prior for the survey methodology correction. 
 ```{r}
 data("photoCorrection")
-photoCorrection %>% mutate(ratio = OBLIQUE/VERTICAL) -> photoCorrection
-gamma.0 = photoCorrection %>% summarize(mean(ratio)) %>% as.double()
-gamma.se = photoCorrection %>% summarize(sd(ratio)/sqrt(n())) %>% as.double()
+photoCorrection %>% mutate(log_ratio = OBLIQUE/VERTICAL) -> photoCorrection
+gamma.0 = photoCorrection %>% summarize(mean(log_ratio)) %>% as.double()
+gamma.se = photoCorrection %>% summarize(sd(log_ratio)/sqrt(n())) %>% as.double()
 
 prior.list=defaultPriorList(trend.limit=0.2, model.data=wdpsModels,
                             gamma.mean=gamma.0, gamma.prec=1/gamma.se^2)
