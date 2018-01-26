@@ -14,7 +14,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-<!-- [![Travis-CI Build Status](https://travis-ci.org/NMML/crawl.svg?branch=devel)](https://travis-ci.org/NMML/crawl) -->
+[![DOI](https://zenodo.org/badge/8592075.svg)](https://zenodo.org/badge/latestdoi/8592075)
 
 ## Fit regional trends to site-specific abundence data
 
